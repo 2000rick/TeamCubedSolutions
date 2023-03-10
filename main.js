@@ -1,6 +1,3 @@
-// import PairingHeap from "priorityqueue/PairingHeap";
-// var PriorityQueue = require('priorityqueue')
-// var PairingHeap = require('priorityqueue/PairingHeap');
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 const dialog = require('electron').dialog;
@@ -103,9 +100,6 @@ class Node {
 
 function ParseData(data) {
   var lines = data.split("\r\n");
-  // console.log(typeof(lines));
-  // console.log(lines);
-  // console.log(lines[0]);
   let ship = new Array(9);
   for(let i = 0; i < 9; i++) {
       ship[i] = new Array(13);
@@ -117,17 +111,11 @@ function ParseData(data) {
   for(let i = 1; i <= 8; ++i) {
       for(let j = 1; j <= 12; ++j, ++idx) {
         let line = lines[idx].split(",");
-        // console.log(line[2], line[3].substr(1));
         ship[i][j].weight = parseInt(line[2].substr(2,5));
         ship[i][j].label = line[3].substr(1);
       }
   }
   
-  // for(let i=1; i<=8; ++i) {
-  //   for(let j=1; j<=12; ++j) {
-  //       console.log(`[${i.toString().padStart(2, '0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}`);
-  //   }
-  // }
   return ship;
 }
 
@@ -252,8 +240,6 @@ function QUEUE_UNLOAD(nodes, node, OPERATORS, visited) {
       let col = node.ToUnload[k][1];
       // Move container to unload to a truck
       if(node.state[row+1][col].label == "UNUSED") {
-          // let expand = node;
-          // let expand = Object.assign(Object.create(Object.getPrototypeOf(node)), node);
           let expand = Node.clone(node);
           let atomic_cost = PathCost(expand, expand.crane, [row, col]);
           expand.moves.push("Unload {" + row + ',' + col + '}' + ' ' + expand.state[row][col].label + ", to truck");            
@@ -278,8 +264,6 @@ function QUEUE_UNLOAD(nodes, node, OPERATORS, visited) {
           for(let j=1; j<=12; ++j) {
               for(let i=1; i<=8; ++i) {
                   if(node.state[i][j].label == "UNUSED" && j != col) {
-                      // let expand = node;
-                      // let expand = Object.assign(Object.create(Object.getPrototypeOf(node)), node);
                       let expand = Node.clone(node);
                       expand.moves.push("Move {" + row + ',' + col + '}' + ' ' + expand.state[row][col].label + " to {" + i + ',' + j + '}');
                       let atomic_cost = PathCost(expand, expand.crane, [row, col]) + PathCost(expand, [row, col], [i, j]);
@@ -307,8 +291,6 @@ function QUEUE_LOAD(nodes, node, OPERATORS, visited) {
   for(let j=1; j<=12; ++j) {
       for(let i=1; i<=8; ++i) {
           if(node.state[i][j].label == "UNUSED") {
-              // let expand = node;
-              // let expand = Object.assign(Object.create(Object.getPrototypeOf(node)), node);
               let expand = Node.clone(node);
               expand.moves.push("Load " + containerToLoad.label + " to {" + i + ',' + j + '}');                    
               expand.state[i][j] = containerToLoad;
@@ -348,8 +330,6 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                   for(let x=1; x<=12; ++x) {
                       for(let y=1; y<=8; ++y) {
                           if(node.state[y][x].label == "UNUSED" && x != j) {
-                              // let expand = node;
-                            //   let expand = Object.assign(Object.create(Object.getPrototypeOf(node)), node);
                               let expand = Node.clone(node);
                               let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]); 
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
@@ -362,9 +342,10 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.crane = [y, x];
                               expand.moves_cost.push(atomic_cost);
                               // nodes.push(expand);
-                              if(!visited.has(expand.state)) {
-                                  nodes.push(expand);
-                                  visited.add(expand.state);
+                              let key = JSON.stringify(expand.state);
+                              if(!visited.has(key)) {
+                                nodes.push(expand);
+                                visited.add(key);
                               }
                               break; // breaks out of loop for y, moves on to next x (next column)
                           }
@@ -382,8 +363,6 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                   for(let x=1; x<=12; ++x) {
                       for(let y=1; y<=8; ++y) {
                           if(node.state[y][x].label == "UNUSED" && x != j) {
-                              // let expand = node;
-                            //   let expand = Object.assign(Object.create(Object.getPrototypeOf(node)), node);
                               let expand = Node.clone(node);
                               let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]);
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
@@ -396,9 +375,10 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.crane = [y, x];
                               expand.moves_cost.push(atomic_cost);
                               // nodes.push(expand);
-                              if(!visited.has(expand.state)) {
-                                  nodes.push(expand);
-                                  visited.add(expand.state);
+                              let key = JSON.stringify(expand.state);
+                              if(!visited.has(key)) {
+                                nodes.push(expand);
+                                visited.add(key);
                               }
                               break; // breaks out of loop for y, moves on to next x (next column)
                           }
@@ -412,9 +392,6 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
 }
 
 function QUEUEING_FUNCTION(nodes, node, OPERATORS, visited) {
-  // Move container to unload to a truck
-  // Move container blocking another container to unload to ALL available cells within the ship.
-  // Load container from truck to ALL available cells on the ship(state).
   if(node.search == 1) {
       QUEUE_UNLOAD(nodes, node, OPERATORS, visited);
       QUEUE_LOAD(nodes, node, OPERATORS, visited);
@@ -432,10 +409,7 @@ function general_search(problem, QUEUEING_FUNCTION) {
   let queueMaxSize = 0; // the maximum size of the queue
   let nodes = MAKE_QUEUE(problem);
   let visited = new Set();
-  visited.add(nodes.peek().state);
-  if(visited.has(nodes.peek().state)) {
-      console.log("The initial state is already visited.");
-  }
+  visited.add(JSON.stringify(nodes.peek().state));
   while(true) {
       queueMaxSize = Math.max(queueMaxSize, nodes.length);
       if(nodes.isEmpty() || nodesExpanded >= 10000) {
@@ -448,13 +422,11 @@ function general_search(problem, QUEUEING_FUNCTION) {
       
       let node = nodes.pop();
       ++nodesExpanded;
-      // if(nodesExpanded % 10000 == 0) {
-      //     console.log("Expanded " + nodesExpanded + " nodes. Queue size: " + nodes.size());
-      //     console.log("The best state to expand with a g(n) = " + node.current + " and h(n) = " + (node.cost - node.current) + " is:\n");
-      //   //   node.print();
-      // }
-      // console.log("The best state to expand with a g(n) = " + node.current + " and h(n) = " + (node.cost - node.current) + " is:\n");
-      // node.print();
+      if(nodesExpanded % 10000 == 0) {
+          console.log("Expanded " + nodesExpanded + " nodes. Queue size: " + nodes.size());
+      }
+    //   console.log("The best state to expand with a g(n) = " + node.current + " and h(n) = " + (node.cost - node.current) + " is:\n");
+    //   node.print();
       
       node.expanded = nodesExpanded;
       node.queueSize = queueMaxSize;
@@ -505,7 +477,7 @@ const createWindow = () => {
             // problem.ToLoad.push(cnt1);
             problem.ToLoad.push(cnt2);
             problem.ToLoad.push(cnt3);
-            problem.search = 1;
+            problem.search = 2;
             let begin = new Date().getTime();
             let result = general_search(problem, QUEUEING_FUNCTION);
             let end = new Date().getTime();
