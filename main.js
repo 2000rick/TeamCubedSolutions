@@ -3,12 +3,12 @@ const path = require('path')
 const dialog = require('electron').dialog;
 var fs = require('fs');
 const { type } = require('os');
-
+const homeDir = require('os').homedir();
 
 class Container {
-  constructor() {
-      this.weight = 0;
-      this.label = "UNUSED";
+  constructor(weight = 0, label = "UNUSED") {
+      this.weight = weight;
+      this.label = label;
   }
 }
 
@@ -117,6 +117,20 @@ function ParseData(data) {
   }
   
   return ship;
+}
+
+function WriteManifest(ship, outputFile) {
+    const Desktop = `${homeDir}\\Desktop`;
+    const output = `${Desktop}\\${outputFile.split(".")[0]}OUTBOUND.txt`;
+    // console.log(output);
+    let manifest = "";
+    for(let i = 1; i <= 8; ++i) {
+        for(let j = 1; j <= 12; ++j) {
+            manifest += `[${i.toString().padStart(2, '0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
+        }
+    }
+    fs.writeFileSync(output, manifest);
+    // console.log(`Finished a cycle. Manifest ${outputFile.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
 }
 
 // PriorityQueue by gyre: https://stackoverflow.com/questions/42919469/efficient-way-to-implement-priority-queue-in-javascript
@@ -333,7 +347,6 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               let expand = Node.clone(node);
                               let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]); 
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
-                              // swap(expand.state[i][j], expand.state[y][x]);
                               let temp = expand.state[i][j];
                               expand.state[i][j] = expand.state[y][x];
                               expand.state[y][x] = temp;
@@ -341,7 +354,6 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.cost = expand.current + ManhattanHeuristic(expand);
                               expand.crane = [y, x];
                               expand.moves_cost.push(atomic_cost);
-                              // nodes.push(expand);
                               let key = JSON.stringify(expand.state);
                               if(!visited.has(key)) {
                                 nodes.push(expand);
@@ -366,7 +378,6 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               let expand = Node.clone(node);
                               let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]);
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
-                              // swap(expand.state[i][j], expand.state[y][x]);
                               let temp = expand.state[i][j];
                               expand.state[i][j] = expand.state[y][x];
                               expand.state[y][x] = temp;
@@ -374,7 +385,6 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.cost = expand.current + ManhattanHeuristic(expand);
                               expand.crane = [y, x];
                               expand.moves_cost.push(atomic_cost);
-                              // nodes.push(expand);
                               let key = JSON.stringify(expand.state);
                               if(!visited.has(key)) {
                                 nodes.push(expand);
@@ -452,32 +462,24 @@ const createWindow = () => {
   
     win.loadFile('index.html')
     const inputFile = dialog.showOpenDialog({ properties: [ 'openFile' ]});
-    // console.log(inputFile);
-    inputFile.then((result) => {
-        console.log(result.filePaths[0]);
-        fs.readFile(result.filePaths[0], 'utf8', function(err, data) {
+    inputFile.then((input) => {
+        console.log(input.filePaths[0]);
+        pathName = input.filePaths[0];
+        fs.readFile(input.filePaths[0], 'utf8', function(err, data) {
             if (err) throw err;
-            // console.log(data);
-            // console.log(typeof(data));
             let ship = ParseData(data);
             let problem = new Node();
             problem.state = ship;
             problem.ToUnload.push([1,4]);
             problem.ToUnload.push([1,5]);
             // problem.ToUnload.push([7,5]);
-            let cnt1 = new Container();
-            cnt1.label = "Bat";
-            cnt1.weight = 431;
-            let cnt2 = new Container();
-            cnt2.label = "Rat";
-            cnt2.weight = 2321;
-            let cnt3 = new Container();
-            cnt3.label = "Nat";
-            cnt3.weight = 153;
+            let cnt1 = new Container(431, "Bat");
+            let cnt2 = new Container(2321, "Rat");
+            let cnt3 = new Container(153, "Nat");
             // problem.ToLoad.push(cnt1);
             problem.ToLoad.push(cnt2);
             problem.ToLoad.push(cnt3);
-            problem.search = 2;
+            problem.search = 1;
             let begin = new Date().getTime();
             let result = general_search(problem, QUEUEING_FUNCTION);
             let end = new Date().getTime();
@@ -489,8 +491,10 @@ const createWindow = () => {
                 result.solution();
                 console.log("Total time to completion: " + result.cost + " minutes\n\n");
                 console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
+                // console.log(pathName.split('\\').pop());
+                WriteManifest(result.state, pathName.split('\\').pop());
             }
-            console.log("=======================================================================\n\n");
+            console.log("=======================================================================\n");
         });
     });
 }
