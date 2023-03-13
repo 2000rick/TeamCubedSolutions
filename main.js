@@ -13,28 +13,28 @@ class Container {
 
 class Node {
   constructor() {
-      this.state = new Array(9);
-      for(let i=0; i<9; ++i) {
-          this.state[i] = new Array(13);
-      }
-      this.buffer = new Array(5);
-      for(let i=0; i<5; ++i) {
-          this.buffer[i] = new Array(25);
-      }
-      this.OPERATORS = [
-          [11, 1], [13, 1]
-      ];
-      this.moves = [];
-      this.moves_cost = [];
-      this.cost = 0;
-      this.current = 0;
-      this.search = 0;
-      this.fail = 0;
-      this.expanded = 0;
-      this.queueSize = 0;
-      this.ToLoad = [];
-      this.ToUnload = [];
-      this.crane = [9, 1];
+    this.state = new Array(9);
+    for(let i=0; i<9; ++i) {
+        this.state[i] = new Array(13);
+    }
+    this.buffer = new Array(5);
+    for(let i=0; i<5; ++i) {
+        this.buffer[i] = new Array(25);
+    }
+    this.OPERATORS = [
+        [11, 1], [13, 1]
+    ];
+    this.moves = [];
+    this.moves_cost = [];
+    this.cost = 0;
+    this.current = 0;
+    this.search = 0;
+    this.fail = 0;
+    this.expanded = 0;
+    this.queueSize = 0;
+    this.ToLoad = [];
+    this.ToUnload = [];
+    this.crane = [9, 1];
   }
   
   GOAL_STATE() {
@@ -54,6 +54,14 @@ class Node {
               }
           }
           return (Math.min(left, right) / Math.max(left, right)) > 0.9;
+      }
+      else if(this.search == 3) {
+        let n = this.siftCoordinates.length;
+        for(let i=0; i<n; ++i) {
+            let curr = this.siftCoordinates[i];
+            if(this.state[curr[0]][curr[1]].label != this.siftContainers[i].label) return false;
+        }
+        return true;
       }
       return false;
   }
@@ -79,7 +87,7 @@ class Node {
   }
   ResetCrane() {
       this.cost += Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1);
-      this.moves.push("Reset crane to default position");
+      this.moves.push("Restore crane to default position");
       this.moves_cost.push(Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1));
       this.crane = [9, 1];
   }
@@ -207,27 +215,44 @@ class PriorityQueue {
 }
 
 function ManhattanHeuristic(node) {
-  let heuristic = 0; //This is h(n)
-  if(node.search == 1) {
-      const target_row = 11; const target_col = 1;
-      for(let i=0; i<node.ToUnload.length; ++i) {
-          let row = node.ToUnload[i][0];
-          let col = node.ToUnload[i][1];
-          heuristic += Math.abs(row-target_row) + Math.abs(col-target_col);
-      }
-      let loadCount = node.ToLoad.length;
-      for(let j=1; j<=12; ++j) {
-          for(let i=1; i<=8; ++i) {
-              if(loadCount == 0) break;
-              if(node.state[i][j].label == "UNUSED") {
-                  heuristic += Math.abs(i-target_row) + Math.abs(j-target_col);
-                  --loadCount;
-              }
-          }
-      }
+  let heuristic = 0; // h(n)
+  if(node.search == 1) { // Load/Unload
+    const target_row = 11; const target_col = 1;
+    for(let i=0; i<node.ToUnload.length; ++i) {
+        let row = node.ToUnload[i][0];
+        let col = node.ToUnload[i][1];
+        heuristic += Math.abs(row-target_row) + Math.abs(col-target_col);
+    }
+    let loadCount = node.ToLoad.length;
+    for(let j=1; j<=12; ++j) {
+        for(let i=1; i<=8; ++i) {
+            if(loadCount == 0) break;
+            if(node.state[i][j].label == "UNUSED") {
+                heuristic += Math.abs(i-target_row) + Math.abs(j-target_col);
+                --loadCount;
+            }
+        }
+    }
   }
-  else if(node.search == 2) {
-      heuristic = 0;
+  else if(node.search == 2) { // Balance
+    heuristic = 0;
+  }
+  else if(node.search == 3) { // Sift
+    for(let i=1; i<=8; ++i) {
+        for(let j=1; j<=12; ++j) {
+            if(node.state[i][j].weight != 0) {
+                for(let k=0; k<node.siftContainers.length; ++k) {
+                    if(node.state[i][j].label == node.siftContainers[k].label) {
+                        let row = node.siftCoordinates[k][0];
+                        let col = node.siftCoordinates[k][1];
+                        if(i != row || j != col) {
+                            heuristic += Math.abs(i-row) + Math.abs(j-col);
+                        }
+                    }
+                }
+            }
+        }
+    }
   }
   return heuristic;
 }
@@ -409,16 +434,96 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
   }
 }
 
+function QUEUE_SIFT(nodes, node, OPERATORS, visited) {
+  // Expand all containers (topmost of a row) to all possible columns
+  for(let j=1; j<=12; ++j) {
+      for(let i=8; i>=1; --i) {
+          if(node.state[i][j].weight != 0) {
+              for(let x=1; x<=12; ++x) {
+                  for(let y=1; y<=8; ++y) {
+                      if(node.state[y][x].label == "UNUSED" && x != j) {
+                          let expand = Node.clone(node);
+                          let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]);
+                          expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
+                          let temp = expand.state[i][j];
+                          expand.state[i][j] = expand.state[y][x];
+                          expand.state[y][x] = temp;
+                          expand.current += atomic_cost;
+                          expand.cost = expand.current + ManhattanHeuristic(expand);
+                          expand.crane = [y, x];
+                          expand.moves_cost.push(atomic_cost);
+                          let key = JSON.stringify(expand.state);
+                          if(!visited.has(key)) {
+                            nodes.push(expand);
+                            visited.add(key);
+                          }
+                          break; // breaks out of loop for y, moves on to next x (next column)
+                      }
+                  }
+              }
+              break; // breaks out of loop for i, moves on to next j (next column)
+          }
+      }
+  }
+}
+
+function SIFT_STATE(node) {
+    let containers = [];
+    let coordinates = [];
+    for(let j=1; j<=12; ++j) {
+        for(let i=1; i<=8; ++i) {
+            if(node.state[i][j].weight != 0) {
+                containers.push(node.state[i][j]);
+            }
+        }
+    }
+    containers.sort(function(a, b) {
+        return b.weight - a.weight;
+    });
+    coordinates.length = containers.length;
+    let idx = 0;
+    for(let i=1; i<=8; ++i) {
+        if(idx >= coordinates.length) {
+            break;
+        }
+        for(let j=6; j >= 1; --j) {
+            if(idx >= coordinates.length || node.state[i][j].label == "NAN") {
+                break;
+            }
+            coordinates[idx] = [i, j];
+            idx += 2;
+        }
+    }
+    idx = 1;
+    for(let i=1; i<=8; ++i) {
+        if(idx >= coordinates.length) {
+            break;
+        }
+        for(let j=7; j <= 12; ++j) {
+            if(idx >= coordinates.length || node.state[i][j].label == "NAN") {
+                break;
+            }
+            coordinates[idx] = [i, j];
+            idx += 2;
+        }
+    }
+
+    return [containers, coordinates];
+}
+
 function QUEUEING_FUNCTION(nodes, node, OPERATORS, visited) {
   if(node.search == 1) {
-      QUEUE_UNLOAD(nodes, node, OPERATORS, visited);
-      QUEUE_LOAD(nodes, node, OPERATORS, visited);
+    QUEUE_UNLOAD(nodes, node, OPERATORS, visited);
+    QUEUE_LOAD(nodes, node, OPERATORS, visited);
   }
   else if(node.search == 2) {
-      QUEUE_BALANCE(nodes, node, OPERATORS, visited);
+    QUEUE_BALANCE(nodes, node, OPERATORS, visited);
+  }
+  else if(node.search == 3) {
+    QUEUE_SIFT(nodes, node, OPERATORS, visited);
   }
   else {
-      console.log("WARNING: UNKNOWN OPERATION.\nPlease select load/unload or balance.");
+    console.log("WARNING: UNKNOWN OPERATION.\nPlease select load/unload or balance.");
   }
 }
 
@@ -430,24 +535,22 @@ function general_search(problem, QUEUEING_FUNCTION) {
   visited.add(JSON.stringify(nodes.peek().state));
   while(true) {
       queueMaxSize = Math.max(queueMaxSize, nodes.size());
-      if(nodes.isEmpty() || nodesExpanded >= 10000) {
-          let failure = new Node();
-          failure.expanded = nodesExpanded;
-          failure.queueSize = queueMaxSize;
-          failure.fail = true;
-          return failure;
+      if(nodes.isEmpty() || nodesExpanded >= 15000) {
+        let failure = new Node();
+        failure.expanded = nodesExpanded;
+        failure.queueSize = queueMaxSize;
+        failure.fail = true;
+        return failure;
       }
       
       let node = nodes.pop();
       ++nodesExpanded;
-    //   console.log("The best state to expand with a g(n) = " + node.current + " and h(n) = " + (node.cost - node.current) + " is:\n");
-    //   node.print();
       node.expanded = nodesExpanded;
       node.queueSize = queueMaxSize;
       if(node.GOAL_STATE()) {
-          console.log("Goal state!");
-          node.ResetCrane();
-          return node; 
+        console.log("Goal state!");
+        node.ResetCrane();
+        return node; 
       }
       QUEUEING_FUNCTION(nodes, node, node.OPERATORS, visited);
   }
@@ -486,12 +589,32 @@ const createWindow = () => {
             problem.ToLoad.push(cnt2);
             problem.ToLoad.push(cnt3);
             problem.search = 2;
+            // let siftItems = SIFT_STATE(problem);
+            // problem.siftContainers = siftItems[0];
+            // problem.siftCoordinates = siftItems[1];
+            // console.log(problem.siftContainers);
+            // console.log(problem.siftCoordinates);
             let begin = new Date().getTime();
             let result = general_search(problem, QUEUEING_FUNCTION);
             let end = new Date().getTime();
             console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
-            if(result.fail)
-                console.log("\nFAILURE\n");
+            if(result.fail) {
+                console.log("\nShip is impossible to balance. Now performing SIFT... ");
+                problem.search = 3;
+                let siftItems = SIFT_STATE(problem);
+                problem.siftContainers = siftItems[0];
+                problem.siftCoordinates = siftItems[1];
+                console.log(problem.siftContainers);
+                console.log(problem.siftCoordinates);
+                begin = new Date().getTime();
+                result = general_search(problem, QUEUEING_FUNCTION);
+                end = new Date().getTime();
+                console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
+                result.solution();
+                console.log("Total time to completion: " + result.cost + " minutes\n\n");
+                console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
+                WriteManifest(result.state, pathName.split('\\').pop());
+            }
             else {
                 console.log("\nSUCCESS\n");
                 result.solution();
