@@ -2,7 +2,6 @@ const { app, BrowserWindow } = require('electron')
 const path = require('path')
 const dialog = require('electron').dialog;
 var fs = require('fs');
-const { type } = require('os');
 const homeDir = require('os').homedir();
 
 class Container {
@@ -88,8 +87,6 @@ class Node {
   static clone(instance) {
     return Object.assign(
       Object.create(
-        // Set the prototype of the new object to the prototype of the instance.
-        // Used to allow new object behave like class instance.
         Object.getPrototypeOf(instance),
       ),
       // Prevent shallow copies of nested structures like arrays, etc
@@ -122,7 +119,6 @@ function ParseData(data) {
 function WriteManifest(ship, outputFile) {
     const Desktop = `${homeDir}\\Desktop`;
     const output = `${Desktop}\\${outputFile.split(".")[0]}OUTBOUND.txt`;
-    // console.log(output);
     let manifest = "";
     for(let i = 1; i <= 8; ++i) {
         for(let j = 1; j <= 12; ++j) {
@@ -131,6 +127,18 @@ function WriteManifest(ship, outputFile) {
     }
     fs.writeFileSync(output, manifest);
     // console.log(`Finished a cycle. Manifest ${outputFile.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
+}
+
+// we can use this function for log file purposes
+async function GetDateTime() {
+    let apiData = await fetch("http://worldtimeapi.org/api/timezone/America/Los_Angeles");
+    let data = await apiData.json();
+    datetime = new Date(data['datetime'].substring(0, 19)).toString();
+    let result = datetime.toString().substr(4,11) + ':' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
+    // console.log(datetime);
+    // console.log(result);
+    // console.log(data);
+    return result;
 }
 
 // PriorityQueue by gyre: https://stackoverflow.com/questions/42919469/efficient-way-to-implement-priority-queue-in-javascript
@@ -421,7 +429,7 @@ function general_search(problem, QUEUEING_FUNCTION) {
   let visited = new Set();
   visited.add(JSON.stringify(nodes.peek().state));
   while(true) {
-      queueMaxSize = Math.max(queueMaxSize, nodes.length);
+      queueMaxSize = Math.max(queueMaxSize, nodes.size());
       if(nodes.isEmpty() || nodesExpanded >= 10000) {
           let failure = new Node();
           failure.expanded = nodesExpanded;
@@ -432,12 +440,8 @@ function general_search(problem, QUEUEING_FUNCTION) {
       
       let node = nodes.pop();
       ++nodesExpanded;
-      if(nodesExpanded % 10000 == 0) {
-          console.log("Expanded " + nodesExpanded + " nodes. Queue size: " + nodes.size());
-      }
     //   console.log("The best state to expand with a g(n) = " + node.current + " and h(n) = " + (node.cost - node.current) + " is:\n");
     //   node.print();
-      
       node.expanded = nodesExpanded;
       node.queueSize = queueMaxSize;
       if(node.GOAL_STATE()) {
@@ -465,7 +469,9 @@ const createWindow = () => {
     inputFile.then((input) => {
         console.log(input.filePaths[0]);
         pathName = input.filePaths[0];
-        fs.readFile(input.filePaths[0], 'utf8', function(err, data) {
+        fs.readFile(input.filePaths[0], 'utf8', async function(err, data) {
+            // let datetime = await GetDateTime();
+            // console.log(datetime);
             if (err) throw err;
             let ship = ParseData(data);
             let problem = new Node();
@@ -479,7 +485,7 @@ const createWindow = () => {
             // problem.ToLoad.push(cnt1);
             problem.ToLoad.push(cnt2);
             problem.ToLoad.push(cnt3);
-            problem.search = 1;
+            problem.search = 2;
             let begin = new Date().getTime();
             let result = general_search(problem, QUEUEING_FUNCTION);
             let end = new Date().getTime();
@@ -491,7 +497,6 @@ const createWindow = () => {
                 result.solution();
                 console.log("Total time to completion: " + result.cost + " minutes\n\n");
                 console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
-                // console.log(pathName.split('\\').pop());
                 WriteManifest(result.state, pathName.split('\\').pop());
             }
             console.log("=======================================================================\n");
@@ -502,4 +507,3 @@ const createWindow = () => {
 app.whenReady().then(() => {
     createWindow()
 })
-
