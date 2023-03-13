@@ -3,6 +3,7 @@ const path = require('path')
 const dialog = require('electron').dialog;
 var fs = require('fs');
 const homeDir = require('os').homedir();
+var FastPriorityQueue = require('fastpriorityqueue');
 
 class Container {
   constructor(weight = 0, label = "UNUSED") {
@@ -149,71 +150,6 @@ async function GetDateTime() {
     return result;
 }
 
-// PriorityQueue by gyre: https://stackoverflow.com/questions/42919469/efficient-way-to-implement-priority-queue-in-javascript
-const top=0,parent=c=>(c+1>>>1)-1,left=c=>(c<<1)+1,right=c=>c+1<<1;
-class PriorityQueue {
-    constructor(comparator = (a, b) => a > b) {
-      this._heap = [];
-      this._comparator = comparator;
-    }
-    size() {
-      return this._heap.length;
-    }
-    isEmpty() {
-      return this.size() == 0;
-    }
-    peek() {
-      return this._heap[top];
-    }
-    push(...values) {
-      values.forEach(value => {
-        this._heap.push(value);
-        this._siftUp();
-      });
-      return this.size();
-    }
-    pop() {
-      const poppedValue = this.peek();
-      const bottom = this.size() - 1;
-      if (bottom > top) {
-        this._swap(top, bottom);
-      }
-      this._heap.pop();
-      this._siftDown();
-      return poppedValue;
-    }
-    replace(value) {
-      const replacedValue = this.peek();
-      this._heap[top] = value;
-      this._siftDown();
-      return replacedValue;
-    }
-    _greater(i, j) {
-      return this._comparator(this._heap[i], this._heap[j]);
-    }
-    _swap(i, j) {
-      [this._heap[i], this._heap[j]] = [this._heap[j], this._heap[i]];
-    }
-    _siftUp() {
-      let node = this.size() - 1;
-      while (node > top && this._greater(node, parent(node))) {
-        this._swap(node, parent(node));
-        node = parent(node);
-      }
-    }
-    _siftDown() {
-      let node = top;
-      while (
-        (left(node) < this.size() && this._greater(left(node), node)) ||
-        (right(node) < this.size() && this._greater(right(node), node))
-      ) {
-        let maxChild = (right(node) < this.size() && this._greater(right(node), left(node))) ? right(node) : left(node);
-        this._swap(node, maxChild);
-        node = maxChild;
-      }
-    }
-}
-
 function ManhattanHeuristic(node) {
   let heuristic = 0; // h(n)
   if(node.search == 1) { // Load/Unload
@@ -258,9 +194,9 @@ function ManhattanHeuristic(node) {
 }
 
 function MAKE_QUEUE(node) {
-  const nodes = new PriorityQueue((a, b) => a.cost < b.cost);
+  const nodes = new FastPriorityQueue((a, b) => a.cost < b.cost);
   node.cost += ManhattanHeuristic(node);
-  nodes.push(node);
+  nodes.add(node);
   return nodes;
 }
 
@@ -297,7 +233,7 @@ function QUEUE_UNLOAD(nodes, node, OPERATORS, visited) {
           expand.cost = expand.current + ManhattanHeuristic(expand);
           expand.crane = [11, 1];
           expand.moves_cost.push(atomic_cost);
-          nodes.push(expand);
+          nodes.add(expand);
       }
       // Move container blocking another container to be unloaded to ALL available cells within the ship, if possible; otherwise, to the buffer.
       else { // [row+1][col] is occupied
@@ -321,7 +257,7 @@ function QUEUE_UNLOAD(nodes, node, OPERATORS, visited) {
                       expand.cost = expand.current + ManhattanHeuristic(expand);
                       expand.crane = [i, j];
                       expand.moves_cost.push(atomic_cost);
-                      nodes.push(expand);
+                      nodes.add(expand);
                       break;
                   }
               }
@@ -349,7 +285,7 @@ function QUEUE_LOAD(nodes, node, OPERATORS, visited) {
               expand.cost = expand.current + ManhattanHeuristic(expand);
               expand.crane = [i, j];
               expand.moves_cost.push(atomic_cost);
-              nodes.push(expand);
+              nodes.add(expand);
               break;
           }
       }
@@ -389,7 +325,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.moves_cost.push(atomic_cost);
                               let key = JSON.stringify(expand.state);
                               if(!visited.has(key)) {
-                                nodes.push(expand);
+                                nodes.add(expand);
                                 visited.add(key);
                               }
                               break; // breaks out of loop for y, moves on to next x (next column)
@@ -420,7 +356,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.moves_cost.push(atomic_cost);
                               let key = JSON.stringify(expand.state);
                               if(!visited.has(key)) {
-                                nodes.push(expand);
+                                nodes.add(expand);
                                 visited.add(key);
                               }
                               break; // breaks out of loop for y, moves on to next x (next column)
@@ -454,7 +390,7 @@ function QUEUE_SIFT(nodes, node, OPERATORS, visited) {
                           expand.moves_cost.push(atomic_cost);
                           let key = JSON.stringify(expand.state);
                           if(!visited.has(key)) {
-                            nodes.push(expand);
+                            nodes.add(expand);
                             visited.add(key);
                           }
                           break; // breaks out of loop for y, moves on to next x (next column)
@@ -534,7 +470,7 @@ function general_search(problem, QUEUEING_FUNCTION) {
   let visited = new Set();
   visited.add(JSON.stringify(nodes.peek().state));
   while(true) {
-      queueMaxSize = Math.max(queueMaxSize, nodes.size());
+      queueMaxSize = Math.max(queueMaxSize, nodes.size);
       if(nodes.isEmpty() || nodesExpanded >= 15000) {
         let failure = new Node();
         failure.expanded = nodesExpanded;
@@ -543,7 +479,7 @@ function general_search(problem, QUEUEING_FUNCTION) {
         return failure;
       }
       
-      let node = nodes.pop();
+      let node = nodes.poll();
       ++nodesExpanded;
       node.expanded = nodesExpanded;
       node.queueSize = queueMaxSize;
@@ -588,12 +524,10 @@ const createWindow = () => {
             // problem.ToLoad.push(cnt1);
             problem.ToLoad.push(cnt2);
             problem.ToLoad.push(cnt3);
-            problem.search = 2;
+            problem.search = 1;
             // let siftItems = SIFT_STATE(problem);
             // problem.siftContainers = siftItems[0];
             // problem.siftCoordinates = siftItems[1];
-            // console.log(problem.siftContainers);
-            // console.log(problem.siftCoordinates);
             let begin = new Date().getTime();
             let result = general_search(problem, QUEUEING_FUNCTION);
             let end = new Date().getTime();
@@ -604,8 +538,6 @@ const createWindow = () => {
                 let siftItems = SIFT_STATE(problem);
                 problem.siftContainers = siftItems[0];
                 problem.siftCoordinates = siftItems[1];
-                console.log(problem.siftContainers);
-                console.log(problem.siftCoordinates);
                 begin = new Date().getTime();
                 result = general_search(problem, QUEUEING_FUNCTION);
                 end = new Date().getTime();
@@ -613,14 +545,14 @@ const createWindow = () => {
                 result.solution();
                 console.log("Total time to completion: " + result.cost + " minutes\n\n");
                 console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
-                WriteManifest(result.state, pathName.split('\\').pop());
+                // WriteManifest(result.state, pathName.split('\\').pop());
             }
             else {
                 console.log("\nSUCCESS\n");
                 result.solution();
                 console.log("Total time to completion: " + result.cost + " minutes\n\n");
                 console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
-                WriteManifest(result.state, pathName.split('\\').pop());
+                // WriteManifest(result.state, pathName.split('\\').pop());
             }
             console.log("=======================================================================\n");
         });
