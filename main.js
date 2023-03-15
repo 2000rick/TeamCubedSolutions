@@ -25,6 +25,7 @@ class Node {
     this.OPERATORS = [
         [11, 1], [13, 1]
     ];
+    this.movePairs = [];
     this.moves = [];
     this.moves_cost = [];
     this.cost = 0;
@@ -85,6 +86,7 @@ class Node {
           sol += this.moves[i] + " ".repeat(max_width-this.moves[i].length) + "(Est. " + this.moves_cost[i] + " minutes)" + "\n";
       }
       console.log(sol);
+      console.log(this.movePairs);
   }
   ResetCrane() {
       this.cost += Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1);
@@ -316,6 +318,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               let expand = Node.clone(node);
                               let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]); 
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
+                              expand.movePairs.push([[i, j],[y, x]]);
                               let temp = expand.state[i][j];
                               expand.state[i][j] = expand.state[y][x];
                               expand.state[y][x] = temp;
@@ -347,6 +350,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               let expand = Node.clone(node);
                               let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]);
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
+                              expand.movePairs.push([[i, j],[y, x]]);
                               let temp = expand.state[i][j];
                               expand.state[i][j] = expand.state[y][x];
                               expand.state[y][x] = temp;
@@ -381,6 +385,7 @@ function QUEUE_SIFT(nodes, node, OPERATORS, visited) {
                           let expand = Node.clone(node);
                           let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]);
                           expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
+                          expand.movePairs.push([[i, j],[y, x]]);
                           let temp = expand.state[i][j];
                           expand.state[i][j] = expand.state[y][x];
                           expand.state[y][x] = temp;
@@ -494,6 +499,36 @@ function general_search(problem, QUEUEING_FUNCTION) {
   return problem; //never reached
 }
 
+function GetPath(node, src, dest) {
+    let path = [];
+    let current = JSON.parse(JSON.stringify(src));
+    let copy = JSON.parse(JSON.stringify(current));
+    path.push(copy);
+    const direction = (src[1] - dest[1]) > 0 ? -1 : 1;
+    while(current[1] != dest[1] || current[0] != dest[0]) {
+        if(current[1] == dest[1]) {
+            --current[0];
+            let copy = JSON.parse(JSON.stringify(current));
+            path.push(copy);
+            continue;
+        }
+        if(node.state[current[0]][current[1]+direction].label == "UNUSED") {
+            current[1] += direction;
+            let copy = JSON.parse(JSON.stringify(current));
+            path.push(copy);
+        } else {
+            ++current[0];
+            let copy = JSON.parse(JSON.stringify(current));
+            path.push(copy);
+        }
+    }
+    // swap node state at src and dest
+    let temp = node.state[src[0]][src[1]];
+    node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
+    node.state[dest[0]][dest[1]] = temp;
+    return path;
+  }
+
 const createWindow = () => {
     const win = new BrowserWindow({
       width: 800,
@@ -506,7 +541,6 @@ const createWindow = () => {
     win.loadFile('index.html')
     const inputFile = dialog.showOpenDialog({ properties: [ 'openFile' ]});
     inputFile.then((input) => {
-        console.log(input.filePaths[0]);
         pathName = input.filePaths[0];
         fs.readFile(input.filePaths[0], 'utf8', async function(err, data) {
             // let datetime = await GetDateTime();
@@ -530,16 +564,19 @@ const createWindow = () => {
             // problem.siftCoordinates = siftItems[1];
             let begin = new Date().getTime();
             let result = general_search(problem, QUEUEING_FUNCTION);
-            let end = new Date().getTime();
-            console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
             if(result.fail) {
                 console.log("\nShip is impossible to balance. Now performing SIFT... ");
                 problem.search = 3;
                 let siftItems = SIFT_STATE(problem);
                 problem.siftContainers = siftItems[0];
                 problem.siftCoordinates = siftItems[1];
-                begin = new Date().getTime();
                 result = general_search(problem, QUEUEING_FUNCTION);
+                let paths = [];
+                for(let i = 0; i < result.movePairs.length; ++i) {
+                    let path = GetPath(problem, result.movePairs[i][0], result.movePairs[i][1]);
+                    paths.push(path);
+                }
+                fs.writeFileSync('paths_output.txt', JSON.stringify(paths));
                 end = new Date().getTime();
                 console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
                 result.solution();
@@ -548,6 +585,15 @@ const createWindow = () => {
                 // WriteManifest(result.state, pathName.split('\\').pop());
             }
             else {
+                let paths = [];
+                for(let i = 0; i < result.movePairs.length; ++i) {
+                    let path = GetPath(problem, result.movePairs[i][0], result.movePairs[i][1]);
+                    paths.push(path);
+                }
+                fs.writeFileSync('paths_output.txt', JSON.stringify(paths));
+                // paths.forEach((path) => {console.log(path)});
+                let end = new Date().getTime();
+                console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
                 console.log("\nSUCCESS\n");
                 result.solution();
                 console.log("Total time to completion: " + result.cost + " minutes\n\n");
