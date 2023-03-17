@@ -6,9 +6,9 @@ const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
 
 class Container {
-  constructor(weight = 0, label = "UNUSED") {
-      this.weight = weight;
+  constructor(label = "UNUSED", weight = 0) {
       this.label = label;
+      this.weight = weight;
   }
 }
 
@@ -22,9 +22,7 @@ class Node {
     for(let i=0; i<5; ++i) {
         this.buffer[i] = new Array(25);
     }
-    this.OPERATORS = [
-        [11, 1], [13, 1]
-    ];
+    this.OPERATORS = [];
     this.movePairs = [];
     this.moves = [];
     this.moves_cost = [];
@@ -146,9 +144,6 @@ async function GetDateTime() {
     let data = await apiData.json();
     datetime = new Date(data['datetime'].substring(0, 19)).toString();
     let result = datetime.toString().substr(4,11) + ':' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
-    // console.log(datetime);
-    // console.log(result);
-    // console.log(data);
     return result;
 }
 
@@ -166,7 +161,7 @@ function ManhattanHeuristic(node) {
         for(let i=1; i<=8; ++i) {
             if(loadCount == 0) break;
             if(node.state[i][j].label == "UNUSED") {
-                heuristic += Math.abs(i-target_row) + Math.abs(j-target_col);
+                heuristic += Math.abs((i+1)-target_row) + Math.abs(j-target_col);
                 --loadCount;
             }
         }
@@ -226,11 +221,12 @@ function QUEUE_UNLOAD(nodes, node, OPERATORS, visited) {
       // Move container to unload to a truck
       if(node.state[row+1][col].label == "UNUSED") {
           let expand = Node.clone(node);
-          let atomic_cost = PathCost(expand, expand.crane, [row, col]);
-          expand.moves.push("Unload {" + row + ',' + col + '}' + ' ' + expand.state[row][col].label + ", to truck");            
+          let atomic_cost = PathCost(expand, expand.crane, [row+1, col]); // row+1 due to how crane operates
+          atomic_cost += Math.abs(truck_row-(row+1)) + Math.abs(truck_col-col);
+          expand.moves.push("Unload {" + row + ',' + col + '}' + ' ' + expand.state[row][col].label + ", to truck"); 
+          expand.movePairs.push([[row, col], [truck_row, truck_col]]);          
           expand.state[row][col] = new Container();
           expand.ToUnload.splice(k, 1);
-          atomic_cost += (truck_row-row) + (col-truck_col);
           expand.current += atomic_cost;
           expand.cost = expand.current + ManhattanHeuristic(expand);
           expand.crane = [11, 1];
@@ -251,13 +247,14 @@ function QUEUE_UNLOAD(nodes, node, OPERATORS, visited) {
                   if(node.state[i][j].label == "UNUSED" && j != col) {
                       let expand = Node.clone(node);
                       expand.moves.push("Move {" + row + ',' + col + '}' + ' ' + expand.state[row][col].label + " to {" + i + ',' + j + '}');
-                      let atomic_cost = PathCost(expand, expand.crane, [row, col]) + PathCost(expand, [row, col], [i, j]);
+                      expand.movePairs.push([[row, col], [i, j]]);
+                      let atomic_cost = PathCost(expand, expand.crane, [row+1, col]) + PathCost(expand, [row, col], [i, j]);
                       let temp = expand.state[row][col];
                       expand.state[row][col] = expand.state[i][j];
                       expand.state[i][j] = temp;
                       expand.current += atomic_cost;
                       expand.cost = expand.current + ManhattanHeuristic(expand);
-                      expand.crane = [i, j];
+                      expand.crane = [i+1, j]; // i+1 due to crane operation
                       expand.moves_cost.push(atomic_cost);
                       nodes.add(expand);
                       break;
@@ -277,15 +274,16 @@ function QUEUE_LOAD(nodes, node, OPERATORS, visited) {
       for(let i=1; i<=8; ++i) {
           if(node.state[i][j].label == "UNUSED") {
               let expand = Node.clone(node);
-              expand.moves.push("Load " + containerToLoad.label + " to {" + i + ',' + j + '}');                    
+              expand.moves.push("Load " + containerToLoad.label + " to {" + i + ',' + j + '}');
+              expand.movePairs.push([[truck_row, truck_col], [i, j]]);                    
               expand.state[i][j] = containerToLoad;
-              let distance = Math.abs(i-11) + Math.abs(j-1);
               let atomic_cost = Math.abs(expand.crane[0]-truck_row) + Math.abs(expand.crane[1]-truck_col);
+              let distance = Math.abs(i-10) + Math.abs(j-1); // i-10 = (i+1)-11, due to crane operation
               atomic_cost += distance;
               expand.current += atomic_cost;
               expand.ToLoad.pop();
               expand.cost = expand.current + ManhattanHeuristic(expand);
-              expand.crane = [i, j];
+              expand.crane = [i+1, j];
               expand.moves_cost.push(atomic_cost);
               nodes.add(expand);
               break;
@@ -316,7 +314,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                       for(let y=1; y<=8; ++y) {
                           if(node.state[y][x].label == "UNUSED" && x != j) {
                               let expand = Node.clone(node);
-                              let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]); 
+                              let atomic_cost = PathCost(expand, expand.crane, [i+1, j]) + PathCost(expand, [i, j], [y, x]); 
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
                               expand.movePairs.push([[i, j],[y, x]]);
                               let temp = expand.state[i][j];
@@ -324,7 +322,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.state[y][x] = temp;
                               expand.current += atomic_cost;
                               expand.cost = expand.current + ManhattanHeuristic(expand);
-                              expand.crane = [y, x];
+                              expand.crane = [y+1, x];
                               expand.moves_cost.push(atomic_cost);
                               let key = JSON.stringify(expand.state);
                               if(!visited.has(key)) {
@@ -348,7 +346,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                       for(let y=1; y<=8; ++y) {
                           if(node.state[y][x].label == "UNUSED" && x != j) {
                               let expand = Node.clone(node);
-                              let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]);
+                              let atomic_cost = PathCost(expand, expand.crane, [i+1, j]) + PathCost(expand, [i, j], [y, x]);
                               expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
                               expand.movePairs.push([[i, j],[y, x]]);
                               let temp = expand.state[i][j];
@@ -356,7 +354,7 @@ function QUEUE_BALANCE(nodes, node, OPERATORS, visited) {
                               expand.state[y][x] = temp;
                               expand.current += atomic_cost;
                               expand.cost = expand.current + ManhattanHeuristic(expand);
-                              expand.crane = [y, x];
+                              expand.crane = [y+1, x];
                               expand.moves_cost.push(atomic_cost);
                               let key = JSON.stringify(expand.state);
                               if(!visited.has(key)) {
@@ -383,7 +381,7 @@ function QUEUE_SIFT(nodes, node, OPERATORS, visited) {
                   for(let y=1; y<=8; ++y) {
                       if(node.state[y][x].label == "UNUSED" && x != j) {
                           let expand = Node.clone(node);
-                          let atomic_cost = PathCost(expand, expand.crane, [i, j]) + PathCost(expand, [i, j], [y, x]);
+                          let atomic_cost = PathCost(expand, expand.crane, [i+1, j]) + PathCost(expand, [i, j], [y, x]);
                           expand.moves.push("Move {" + i + ',' + j + '}' + ' ' + expand.state[i][j].label + " to {" + y + ',' + x + '}');
                           expand.movePairs.push([[i, j],[y, x]]);
                           let temp = expand.state[i][j];
@@ -391,7 +389,7 @@ function QUEUE_SIFT(nodes, node, OPERATORS, visited) {
                           expand.state[y][x] = temp;
                           expand.current += atomic_cost;
                           expand.cost = expand.current + ManhattanHeuristic(expand);
-                          expand.crane = [y, x];
+                          expand.crane = [y+1, x];
                           expand.moves_cost.push(atomic_cost);
                           let key = JSON.stringify(expand.state);
                           if(!visited.has(key)) {
@@ -506,13 +504,12 @@ function GetPath(node, src, dest) {
     path.push(copy);
     const direction = (src[1] - dest[1]) > 0 ? -1 : 1;
     while(current[1] != dest[1] || current[0] != dest[0]) {
-        if(current[1] == dest[1]) {
-            --current[0];
+        if(current[1] == dest[1]) { // same column
+            dest[0] > current[0] ? ++current[0] : --current[0];
             let copy = JSON.parse(JSON.stringify(current));
             path.push(copy);
-            continue;
         }
-        if(node.state[current[0]][current[1]+direction].label == "UNUSED") {
+        else if(current[0] >= 9 || node.state[current[0]][current[1]+direction].label == "UNUSED") {
             current[1] += direction;
             let copy = JSON.parse(JSON.stringify(current));
             path.push(copy);
@@ -523,9 +520,15 @@ function GetPath(node, src, dest) {
         }
     }
     // swap node state at src and dest
-    let temp = node.state[src[0]][src[1]];
-    node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
-    node.state[dest[0]][dest[1]] = temp;
+    if(dest[0] >= 9) {
+        node.state[src[0]][src[1]] = new Container();
+    } else if(src[0] >= 9) {
+        node.state[dest[0]][dest[1]] = new Container("Occupied", 88);
+    } else {    
+        let temp = node.state[src[0]][src[1]];
+        node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
+        node.state[dest[0]][dest[1]] = temp;
+    }
     return path;
   }
 
@@ -551,17 +554,9 @@ const createWindow = () => {
             problem.state = ship;
             problem.ToUnload.push([1,4]);
             problem.ToUnload.push([1,5]);
-            // problem.ToUnload.push([7,5]);
-            let cnt1 = new Container(431, "Bat");
-            let cnt2 = new Container(2321, "Rat");
-            let cnt3 = new Container(153, "Nat");
-            // problem.ToLoad.push(cnt1);
-            problem.ToLoad.push(cnt2);
-            problem.ToLoad.push(cnt3);
-            problem.search = 1;
-            // let siftItems = SIFT_STATE(problem);
-            // problem.siftContainers = siftItems[0];
-            // problem.siftCoordinates = siftItems[1];
+            problem.ToLoad.push(new Container("Nat", 153));
+            problem.ToLoad.push(new Container("Rat", 2321));          
+            problem.search = 2;
             let begin = new Date().getTime();
             let result = general_search(problem, QUEUEING_FUNCTION);
             if(result.fail) {
@@ -608,3 +603,24 @@ const createWindow = () => {
 app.whenReady().then(() => {
     createWindow()
 })
+
+/*
+    problem.ToUnload.push([1, 2]); //Case 1 unload only
+
+    problem.ToLoad.push(new Container("Bat", 431)); //Case 2 load only
+
+    case 3: load & unload
+    problem.ToUnload.push([1, 2]);
+    problem.ToLoad.push(new Container("Bat", 532));
+    problem.ToLoad.push(new Container("Rat", 6317));
+
+    case 4: load & unload
+    problem.ToUnload.push([7,5]);
+    problem.ToLoad.push(new Container("Nat", 2543));
+
+    case 5: load & unload
+    problem.ToUnload.push([1,4]);
+    problem.ToUnload.push([1,5]);
+    problem.ToLoad.push(new Container("Nat", 153));
+    problem.ToLoad.push(new Container("Rat", 2321));
+*/
