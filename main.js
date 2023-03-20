@@ -1,5 +1,12 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
+const prompt = require('electron-prompt')
 const path = require('path')
+
+const registerIPC = () => {
+  ipcMain.handle("prompt", (_, promptOptions) => {
+    return prompt(promptOptions);
+  });
+}
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -16,6 +23,7 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
+    registerIPC();
     createWindow()
 })
 
