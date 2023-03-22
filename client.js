@@ -124,7 +124,7 @@ async function GetDateTime() {
     let apiData = await fetch("http://worldtimeapi.org/api/timezone/America/Los_Angeles");
     let data = await apiData.json();
     datetime = new Date(data['datetime'].substring(0, 19)).toString();
-    let result = '[' + datetime.toString().substr(4,11) + ']' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
+    let result = datetime.toString().substr(4,11) + ':' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
     return result;
 }
 
@@ -137,17 +137,21 @@ function WriteManifest(ship, outputFile) {
             manifest += `[${i.toString().padStart(2, '0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
         }
     }
+    if(fs.existsSync(output))
+        fs.chmodSync(output, 0o600); //Read/Write
     fs.writeFileSync(output, manifest);
-    // console.log(`Finished a cycle. Manifest ${outputFile.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
+    fs.chmodSync(output, 0o400); //Read Only permission
+    WriteLog(logPath, `Finished a cycle. Manifest ${output.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
 }
 
-async function WriteLog(text) {
+// https://www.geeksforgeeks.org/node-js-fs-chmod-method/
+async function WriteLog(path, text) {
     datetime = await GetDateTime();
-    let year = datetime.substr(8, 4);
-    const output = `KeoghLongBeach${year}.txt`;
-    text = "{" + datetime + "} " + text + "\n";
-    fs.appendFileSync(output, text);
-    fs.chmod(output, 0o444); //Changes File to Read Only
+    text = datetime + ' ' + text + "\n";
+    if(fs.existsSync(path))
+        fs.chmodSync(path, 0o600); //Read/Write
+    fs.appendFileSync(path, text);
+    fs.chmodSync(path, 0o444); //Changes File to Read Only
 }
 
 function ManhattanHeuristic(node) {
@@ -547,6 +551,9 @@ const closepopupBtn = document.getElementById('closePopup');
 label = document.getElementById("solutionlabel");
 const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
+const logYear = 2023; // This should be input from the user (at initial page load)
+const logPath = `${homeDir}\\Documents\\${"KeoghLongBeach"+logYear+".txt"}`;
+
 function highlightGrid(node) {
     const selectedCells = table.querySelectorAll('.selected');
     selectedCells.forEach(cell => {
@@ -577,11 +584,6 @@ function highlightGrid(node) {
 }
 
 // Create the grid
-// const pinkCellRow = document.createElement('tr');
-// const pinkCell = document.createElement('td');
-// pinkCellRow.appendChild(pinkCell);
-// table.appendChild(pinkCellRow);
-// pinkCell.classList.add('pinkCell');
 for (let i = 0; i < 9; i++) {
     const row = document.createElement('tr');
     for (let j = 0; j < 12; j++) {
@@ -601,7 +603,8 @@ for (let i = 0; i < 9; i++) {
 
 highlightBtn.addEventListener('click', () => {    
     const inputManifest = highlightFile.files[0]['path'];
-    WriteLog(inputManifest + " is opened.");
+    const manifestName = inputManifest.split('\\').pop();
+    WriteLog(logPath, "Manifest " + manifestName + " is opened.");
     fs.readFile(inputManifest, 'utf8', async function(err, data) {
         // let datetime = await GetDateTime();
         // console.log(datetime);
@@ -676,7 +679,7 @@ highlightBtn.addEventListener('click', () => {
             return;
             }
             lastClickTime = now;
-            if(moveIndex != moves.length-1) {WriteLog("Finished container " + result.moves[moveIndex]);}
+            if(moveIndex != moves.length-1) {WriteLog(logPath, "Finished atomic operation: " + result.moves[moveIndex]);}
 
             src = moves[moveIndex][0];
             dest = moves[moveIndex][moves[moveIndex].length-1];
@@ -694,7 +697,8 @@ highlightBtn.addEventListener('click', () => {
             if(moveIndex == moves.length){
                 stepsfinishedpopup.showModal();
             }
-            label.innerHTML = result.moves[moveIndex];
+            if(moveIndex != moves.length)
+                label.innerHTML = result.moves[moveIndex];
             highlightGrid(node);
         });  
         move.forEach((coord, index) => {
@@ -719,7 +723,7 @@ highlightBtn.addEventListener('click', () => {
 
         closepopupBtn.addEventListener('click', () => {
             WriteManifest(result.state, inputManifest.split('\\').pop());
-            WriteLog(inputManifest + " is closed.")
+            WriteLog(logPath, "Manifest " + manifestName + " is closed.")
             stepsfinishedpopup.close();
             // Reset all cells to their original state
             const selectedCells = table.querySelectorAll('.selected');
@@ -738,12 +742,12 @@ highlightBtn.addEventListener('click', () => {
     });
 });
 
-    commentBtn.addEventListener('click', () => {
-        const commentText = "Comment From [Placeholder Name]: " + commentBox.value;
-        WriteLog(commentText);
-    });
+commentBtn.addEventListener('click', () => {
+    const commentText = "[Placeholder Name]: " + commentBox.value;
+    WriteLog(logPath, commentText);
+    commentBox.value = '';
+});
 
-    clearcommentboxBtn.addEventListener('click', () => {
-        getYear();
-        commentBox.value = '';
-    });
+// clearcommentboxBtn.addEventListener('click', () => {
+//     commentBox.value = '';
+// });

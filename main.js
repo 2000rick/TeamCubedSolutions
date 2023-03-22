@@ -1,8 +1,5 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
-// var fs = require('fs');
-// const homeDir = require('os').homedir();
-// var FastPriorityQueue = require('fastpriorityqueue');
 
 const createWindow = () => {
     const win = new BrowserWindow({
