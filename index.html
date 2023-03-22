@@ -5,13 +5,25 @@
   <meta charset="UTF-8">
   <title> Console </title>
   <style>
+    .solutiontext {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 36px;
+    }
+
+    /* label {
+      margin-bottom: 10px;
+    }     */
     table {
+      margin: 0 auto;
       border-collapse: collapse;
     }
 
     td {
-      width: 50px;
-      height: 50px;
+      width: 60px;
+      height: 60px;
       border: 1px solid black;
       text-align: center;
       vertical-align: middle;
@@ -21,7 +33,7 @@
     }
 
     td.selected {
-      background-color: red;
+      background-color: #EA5455;
     }
 
     td.nan {
@@ -29,7 +41,11 @@
     }
 
     td.animated {
-      background-color: blue;
+      background-color: #62CDFF;
+    }
+    
+    td.pinkCell {
+      background-color: pink;
     }
   </style>
 </head>
@@ -38,26 +54,34 @@
   <label for="highlight-file">Upload Manifest:</label>
   <input type="file" id="highlight-file">
   <button id="highlight-btn">Highlight Cells</button>
-  <label for="moves-file">Choose file for moves:</label>
-  <input type="file" id="moves-file">
-  <button id="animate-btn">Animate Moves</button>
-  
+    <!-- <label for="moves-file">Choose file for moves:</label>
+    <input type="file" id="moves-file">
+    <button id="animate-btn">Animate Moves</button> -->
+    <div class="solutiontext">
+      <label id="solutionlabel"></label>
+    </div>
   <table>
     <tbody>
       <!-- Grid is here -->
     </tbody>
-  </table>
+  </table>  
   <button id="prev-btn">Previous Move</button>
   <button id="next-btn">Next Move</button>
   <button id="reset-btn">Finished</button>
 
   <dialog id="stepsfinished-popup">
-    <h2>All Steps Completed</h2>
-    <p>Please click the finished button!</p>
-    <button id="closePopup">Close Popup</button>
+    <h2>Comgratulations, you are finished!</h2>
+    <p>Remember to email the captain the updated Manifest.</p>
+    <button id="closePopup">Finish</button>
   </dialog>
   
   <script src="client.js"></script>
+
+</body>
+
+
+</html>
+
   <!-- <script>
     const table = document.querySelector('table');
     const highlightFile = document.querySelector('#highlight-file');
@@ -101,6 +125,21 @@
       };
       if(file) {reader.readAsText(file);}
     });
+    
+    for(let i = 1; i <= 8; ++i) {
+      for(let j = 1; j <= 12; ++j) {
+        const row = i;
+        const col = j;
+        mass = node.state[i][j].weight;
+        name = node.state[i][j].label;
+        const cellElem = table.rows[7 - (row - 1)].cells[col - 1];
+        if (name != 'UNUSED') {
+          cellElem.textContent = name.trim();
+          cellElem.classList.add('selected');
+          console.log(`Highlighted cell: Row ${row}, Column ${col}`);
+        }        
+      }
+    }
 
     //https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readAsText
     animateBtn.addEventListener('click', () => {
@@ -177,6 +216,3 @@
       clearInterval(moveInterval);
     });
   </script> -->
-</body>
-
-</html>
