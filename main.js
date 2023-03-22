@@ -1,9 +1,5 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
-// const dialog = require('electron').dialog;
-// var fs = require('fs');
-// const homeDir = require('os').homedir();
-// var FastPriorityQueue = require('fastpriorityqueue');
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -15,7 +11,7 @@ const createWindow = () => {
         contextIsolation: false
       }
     })
-  
+    win.maximize();
     win.loadFile('index.html')
 }
 

@@ -12,10 +12,22 @@
       margin-bottom: 10px;
       font-size: 36px;
     }
-
-    /* label {
-      margin-bottom: 10px;
-    }     */
+    #commentBox {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 16px;
+        height: 100px;
+        padding: 10px;
+        resize: none;
+        width: 100%;
+    }
+    .inputlabel {
+      display: flex;
+      flex-direction: column;
+      margin-top:10px;
+      margin-bottom:10px;
+    }
     table {
       margin: 0 auto;
       border-collapse: collapse;
@@ -53,7 +65,7 @@
 <body>
   <label for="highlight-file">Upload Manifest:</label>
   <input type="file" id="highlight-file">
-  <button id="highlight-btn">Highlight Cells</button>
+  <button id="highlight-btn">Generate Moves</button>
     <div class="solutiontext">
       <label id="solutionlabel"></label>
     </div>
@@ -64,15 +76,18 @@
   </table>  
   <button id="prev-btn">Previous Move</button>
   <button id="next-btn">Next Move</button>
-  <!-- <button id="reset-btn">Finished</button> -->
-
   <dialog id="stepsfinished-popup">
     <h2>Congratulations, you are finished!</h2>
     <p>Remember to email the captain the updated Manifest.</p>
     <button id="closePopup">Finish</button>
   </dialog>
-  
-  <script src="client.js"></script>
+  <div class="inputlabel">
+    <label for="commentBox">Enter your comment:</label>
+  </div>
+  <textarea id="commentBox" name="commentBox" placeholder="Type your comment here..."></textarea>  
+  <button id="comment-btn">Add Comment</button>
+  <!-- <button id="clearcommentbox-btn">Clear Comment Box</button> -->
+  <script src="client.js"> </script>
 
 </body>
 
