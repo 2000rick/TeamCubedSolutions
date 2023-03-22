@@ -15,10 +15,6 @@ class Node {
     for(let i=0; i<9; ++i) {
         this.state[i] = new Array(13);
     }
-    this.buffer = new Array(5);
-    for(let i=0; i<5; ++i) {
-        this.buffer[i] = new Array(25);
-    }
     this.OPERATORS = [];
     this.movePairs = [];
     this.moves = [];
@@ -87,6 +83,7 @@ class Node {
       this.cost += Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1);
       this.moves.push("Restore crane to default position");
       this.moves_cost.push(Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1));
+      this.movePairs.push([JSON.parse(JSON.stringify(this.crane)), [9, 1]]);
       this.crane = [9, 1];
   }
   // https://gist.github.com/GeorgeGkas/36f7a7f9a9641c2115a11d58233ebed2
@@ -609,7 +606,7 @@ highlightBtn.addEventListener('click', () => {
             return;
         }
         const move = moves[moveIndex];
-        lastClickTime = 0;
+        let lastClickTime = 0;
         prevBtn.addEventListener('click', () => {
             const now = Date.now();
             if(now - lastClickTime < 1000) {
