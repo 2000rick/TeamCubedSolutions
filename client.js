@@ -97,7 +97,7 @@ class Node {
     );
   }
 }
-
+  
 function ParseData(data) {
   var lines = data.split("\r\n");
   let ship = new Array(9);
@@ -119,6 +119,15 @@ function ParseData(data) {
   return ship;
 }
 
+// we can use this function for log file purposes
+async function GetDateTime() {
+    let apiData = await fetch("http://worldtimeapi.org/api/timezone/America/Los_Angeles");
+    let data = await apiData.json();
+    datetime = new Date(data['datetime'].substring(0, 19)).toString();
+    let result = '[' + datetime.toString().substr(4,11) + ']' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
+    return result;
+}
+
 function WriteManifest(ship, outputFile) {
     const Desktop = `${homeDir}\\Desktop`;
     const output = `${Desktop}\\${outputFile.split(".")[0]}OUTBOUND.txt`;
@@ -132,13 +141,13 @@ function WriteManifest(ship, outputFile) {
     // console.log(`Finished a cycle. Manifest ${outputFile.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
 }
 
-// we can use this function for log file purposes
-async function GetDateTime() {
-    let apiData = await fetch("http://worldtimeapi.org/api/timezone/America/Los_Angeles");
-    let data = await apiData.json();
-    datetime = new Date(data['datetime'].substring(0, 19)).toString();
-    let result = datetime.toString().substr(4,11) + ':' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
-    return result;
+async function WriteLog(text) {
+    datetime = await GetDateTime();
+    let year = datetime.substr(8, 4);
+    const output = `KeoghLongBeach${year}.txt`;
+    text = "{" + datetime + "} " + text + "\n";
+    fs.appendFileSync(output, text);
+    fs.chmod(output, 0o444); //Changes File to Read Only
 }
 
 function ManhattanHeuristic(node) {
@@ -529,10 +538,13 @@ function GetPath(node, src, dest) {
 const table = document.querySelector('table');
 const highlightFile = document.querySelector('#highlight-file');
 const highlightBtn = document.querySelector('#highlight-btn');
-const resetBtn = document.querySelector('#reset-btn');    
+const commentBtn = document.querySelector('#comment-btn');    
+const clearcommentboxBtn = document.querySelector('#clearcommentbox-btn');
+const commentBox = document.querySelector('#commentBox');
 const prevBtn = document.querySelector('#prev-btn'); 
 const nextBtn = document.querySelector('#next-btn');   
 const closepopupBtn = document.getElementById('closePopup'); 
+label = document.getElementById("solutionlabel");
 const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
 function highlightGrid(node) {
@@ -589,7 +601,7 @@ for (let i = 0; i < 9; i++) {
 
 highlightBtn.addEventListener('click', () => {    
     const inputManifest = highlightFile.files[0]['path'];
-    console.log(inputManifest);
+    WriteLog(inputManifest + " is opened.");
     fs.readFile(inputManifest, 'utf8', async function(err, data) {
         // let datetime = await GetDateTime();
         // console.log(datetime);
@@ -664,6 +676,8 @@ highlightBtn.addEventListener('click', () => {
             return;
             }
             lastClickTime = now;
+            if(moveIndex != moves.length-1) {WriteLog("Finished container " + result.moves[moveIndex]);}
+
             src = moves[moveIndex][0];
             dest = moves[moveIndex][moves[moveIndex].length-1];
             if(dest[0] >= 9) {
@@ -680,25 +694,9 @@ highlightBtn.addEventListener('click', () => {
             if(moveIndex == moves.length){
                 stepsfinishedpopup.showModal();
             }
-            label = document.getElementById("solutionlabel");
-            label.innerHtml = result.moves[moveIndex];
+            label.innerHTML = result.moves[moveIndex];
             highlightGrid(node);
         });  
-        // resetBtn.addEventListener('click', () => {
-        //     const selectedCells = table.querySelectorAll('.selected');
-        //     selectedCells.forEach(cell => {
-        //         cell.textContent = ' ';
-        //         cell.classList.remove('selected');
-        //     });
-        //     const animatedCells = table.querySelectorAll('.animated');
-        //     animatedCells.forEach(cell => {
-        //         cell.classList.remove('animated');
-        //     });
-        //     moveIndex = 0;
-        //     label = document.getElementById("solutionlabel");
-        //     label.innerHtml = '';
-        //     clearInterval(moveInterval);
-        // });
         move.forEach((coord, index) => {
             setTimeout(() => {
             const [row, col] = coord;
@@ -721,6 +719,7 @@ highlightBtn.addEventListener('click', () => {
 
         closepopupBtn.addEventListener('click', () => {
             WriteManifest(result.state, inputManifest.split('\\').pop());
+            WriteLog(inputManifest + " is closed.")
             stepsfinishedpopup.close();
             // Reset all cells to their original state
             const selectedCells = table.querySelectorAll('.selected');
@@ -734,6 +733,17 @@ highlightBtn.addEventListener('click', () => {
             });
             moveIndex = 0;
             clearInterval(moveInterval);            
+            label.innerHTML = " ";
         });
     });
 });
+
+    commentBtn.addEventListener('click', () => {
+        const commentText = "Comment From [Placeholder Name]: " + commentBox.value;
+        WriteLog(commentText);
+    });
+
+    clearcommentboxBtn.addEventListener('click', () => {
+        getYear();
+        commentBox.value = '';
+    });
