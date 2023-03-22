@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title> Console </title>
+  <style>
+    table {
+      border-collapse: collapse;
+    }
+
+    td {
+      width: 50px;
+      height: 50px;
+      border: 1px solid black;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 24px;
+      font-weight: bold;
+      background-color: white;
+    }
+
+    td.selected {
+      background-color: red;
+    }
+
+    td.nan {
+      background-color: black;
+    }
+
+    td.animated {
+      background-color: blue;
+    }
+  </style>
+</head>
+
+<body>
+  <label for="highlight-file">Upload Manifest:</label>
+  <input type="file" id="highlight-file">
+  <button id="highlight-btn">Highlight Cells</button>
+  <label for="moves-file">Choose file for moves:</label>
+  <input type="file" id="moves-file">
+  <button id="animate-btn">Animate Moves</button>
+  
+  <table>
+    <tbody>
+      <!-- Grid is here -->
+    </tbody>
+  </table>
+  <button id="prev-btn">Previous Move</button>
+  <button id="next-btn">Next Move</button>
+  <button id="reset-btn">Finished</button>
+
+  <dialog id="stepsfinished-popup">
+    <h2>All Steps Completed</h2>
+    <p>Please click the finished button!</p>
+    <button id="closePopup">Close Popup</button>
+  </dialog>
+  
+  <script src="client.js"></script>
+  <!-- <script>
+    const table = document.querySelector('table');
+    const highlightFile = document.querySelector('#highlight-file');
+    const highlightBtn = document.querySelector('#highlight-btn');
+    const movesFile = document.querySelector('#moves-file');
+    const animateBtn = document.querySelector('#animate-btn');
+    const resetBtn = document.querySelector('#reset-btn');    
+    const prevBtn = document.querySelector('#prev-btn'); 
+    const nextBtn = document.querySelector('#next-btn');   
+    const closepopupBtn = document.getElementById('closePopup'); 
+    const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
+
+    // Create the grid
+    for (let i = 0; i < 8; i++) {
+      const row = document.createElement('tr');
+      for (let j = 0; j < 12; j++) {
+        const cell = document.createElement('td');
+        cell.textContent = `${8 - i},${j + 1}`;
+        row.appendChild(cell);
+      }
+      table.appendChild(row);
+    }
+
+    // Highlight cells based on file
+    highlightBtn.addEventListener('click', () => {
+      const file = highlightFile.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileContents = event.target.result;
+        const cellData = fileContents.split('\n');
+        cellData.forEach(cell => {
+          const [coords, mass, name] = cell.split(', ');
+          const [row, col] = coords.substring(1, coords.length - 1).split(',');
+          const cellElem = table.rows[7 - (row - 1)].cells[col - 1];
+          if (name.trim() != 'UNUSED') {
+            cellElem.textContent = name.trim();
+            cellElem.classList.add('selected');
+            console.log(`Highlighted cell: Row ${row}, Column ${col}`);
+          }
+        });
+      };
+      if(file) {reader.readAsText(file);}
+    });
+
+    //https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readAsText
+    animateBtn.addEventListener('click', () => {
+      const file = movesFile.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileContents = event.target.result;
+        const moves = JSON.parse(fileContents);
+        let moveIndex = 0;
+        const moveInterval = setInterval(() => {
+          if (moveIndex >= moves.length) {
+            clearInterval(moveInterval);
+              setTimeout(runAnimation, 1000); // call the function again after a delay
+            return;
+          }
+          const move = moves[moveIndex];
+          lastClickTime = 0;
+          prevBtn.addEventListener('click', () => {
+            const now = Date.now();
+            if(now - lastClickTime < 1000) {
+              return;
+            }
+            lastClickTime = now;
+            if(moveIndex > 0){moveIndex-=1;}
+          });  
+          nextBtn.addEventListener('click', () => {
+            const now = Date.now();
+            if(now - lastClickTime < 1000) {
+              return;
+            }
+            lastClickTime = now;
+            if(moveIndex < moves.length-1){moveIndex+=1;}
+            else if(moveIndex == moves.length-1){
+              stepsfinishedpopup.showModal();
+            }
+          });  
+          resetBtn.addEventListener('click', () => {
+            moveIndex = 0;
+            clearInterval(moveInterval);
+          });
+          move.forEach((coord, index) => {
+            setTimeout(() => {
+              const [row, col] = coord;
+              const cell = table.rows[7-(row - 1)].cells[col - 1];
+              cell.classList.add('animated');
+            }, index * 500);
+            setTimeout(() => {
+              const [row, col] = coord;
+              const cell = table.rows[7-(row - 1)].cells[col - 1];
+              cell.classList.remove('animated');
+            }, index * 500 + 1000);
+          });
+        }, moves.length * 1000);
+      };
+      if(file) {reader.readAsText(file);}
+    });
+
+    closepopupBtn.addEventListener('click', () => {
+      stepsfinishedpopup.close();
+    });
+
+    // Reset all cells to their original state
+    resetBtn.addEventListener('click', () => {
+      // Reset all cells to their original state
+      const selectedCells = table.querySelectorAll('.selected');
+      selectedCells.forEach(cell => {
+        cell.classList.remove('selected');
+      });
+      const animatedCells = table.querySelectorAll('.animated');
+      animatedCells.forEach(cell => {
+        cell.classList.remove('animated');
+      });
+      moveIndex = 0;
+      clearInterval(moveInterval);
+    });
+  </script> -->
+</body>
+
+</html>

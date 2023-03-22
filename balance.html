@@ -1,0 +1,78 @@
+<html>
+<head>
+	
+</head>
+<body onload="init_func()">
+	<h1>Balance Ship</h1>
+
+	<div id="error_message_div" hidden=true>
+		<p id="error_message_text">Error Message</p>
+	</div>
+	
+	<div id="allow_balance" hidden=true>
+		<h2 id="ship_name">Current Ship: INSERT_SHIP_NAME</h2>
+
+		<p id=move_instructions>Move container at (X,Y) to (X1,Y1)</p>
+		
+		<table>
+			
+		</table>
+		
+		<div id="progress_container"></div>
+		<p id="time_till_completion">Time till completion</p>
+
+		<button class="button-2" id="insert_comment_button" onclick="enter_comment()">Add Comment</button>
+
+		<form action="" onsubmit="return false" method="get" class="submit-comment-form" hidden=true>
+			<div class="submit-comment-form"">
+				<p for="name">Enter Comment Here:</p>
+			    <textarea id="user_comment" maxlength="255"></textarea>
+			</div>
+			<div class="submit-comment-form"">
+			    <input type="submit" value="Submit" onclick="submit_comment()">
+				<button onclick="reset_form()">Cancel</button>
+			</div>
+		</form>
+		
+		<div id="step_buttons"></div>
+	</div>
+	
+	
+</body>
+</html>
+
+<script>
+	var url = new URL(window.location);
+	var manifest_file = url.searchParams.get('filepath');
+
+	function init_func() {
+		//url = new URL(window.location);
+		//manifest_file = url.searchParams.get('filepath');
+		
+		if (manifest_file != null) {
+			
+			let manifest_name = manifest_file.toString().substring(manifest_file.toString().lastIndexOf('_')+1, manifest_file.toString().lastIndexOf('.'));
+			document.getElementById("ship_name").innerHTML = "Current Ship: " + manifest_name;
+			document.getElementById("allow_balance").hidden = false;
+		}
+		else {
+			document.getElementById("error_message_div").hidden = false;
+			let home_path = url.href.toString().substring(0, url.href.lastIndexOf("/"));
+			document.getElementById("error_message_text").innerHTML = "No manifest file selected... Go back to <a href=\"" + home_path +"\">main menu</a>";
+		}
+	}
+
+	// Comment Functions
+	function enter_comment() {
+		document.getElementsByClassName("submit-comment-form")[0].hidden = false;
+	}
+	function submit_comment() {
+		//Use value here
+		console.log(document.getElementById("user_comment").value);
+		reset_form();
+	}
+	function reset_form() {
+		document.getElementById("user_comment").value = '';
+		document.getElementsByClassName("submit-comment-form")[0].hidden = true;
+	}
+</script>
