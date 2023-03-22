@@ -684,21 +684,21 @@ highlightBtn.addEventListener('click', () => {
             label.innerHtml = result.moves[moveIndex];
             highlightGrid(node);
         });  
-        resetBtn.addEventListener('click', () => {
-            const selectedCells = table.querySelectorAll('.selected');
-            selectedCells.forEach(cell => {
-                cell.textContent = ' ';
-                cell.classList.remove('selected');
-            });
-            const animatedCells = table.querySelectorAll('.animated');
-            animatedCells.forEach(cell => {
-                cell.classList.remove('animated');
-            });
-            moveIndex = 0;
-            label = document.getElementById("solutionlabel");
-            label.innerHtml = '';
-            clearInterval(moveInterval);
-        });
+        // resetBtn.addEventListener('click', () => {
+        //     const selectedCells = table.querySelectorAll('.selected');
+        //     selectedCells.forEach(cell => {
+        //         cell.textContent = ' ';
+        //         cell.classList.remove('selected');
+        //     });
+        //     const animatedCells = table.querySelectorAll('.animated');
+        //     animatedCells.forEach(cell => {
+        //         cell.classList.remove('animated');
+        //     });
+        //     moveIndex = 0;
+        //     label = document.getElementById("solutionlabel");
+        //     label.innerHtml = '';
+        //     clearInterval(moveInterval);
+        // });
         move.forEach((coord, index) => {
             setTimeout(() => {
             const [row, col] = coord;
