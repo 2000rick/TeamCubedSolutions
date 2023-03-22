@@ -15,10 +15,6 @@ class Node {
     for(let i=0; i<9; ++i) {
         this.state[i] = new Array(13);
     }
-    this.buffer = new Array(5);
-    for(let i=0; i<5; ++i) {
-        this.buffer[i] = new Array(25);
-    }
     this.OPERATORS = [];
     this.movePairs = [];
     this.moves = [];
