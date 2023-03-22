@@ -87,6 +87,7 @@ class Node {
       this.cost += Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1);
       this.moves.push("Restore crane to default position");
       this.moves_cost.push(Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1));
+      this.movePairs.push([JSON.parse(JSON.stringify(this.crane)), [9, 1]]);
       this.crane = [9, 1];
   }
   // https://gist.github.com/GeorgeGkas/36f7a7f9a9641c2115a11d58233ebed2
@@ -540,18 +541,59 @@ const nextBtn = document.querySelector('#next-btn');
 const closepopupBtn = document.getElementById('closePopup'); 
 const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
+function highlightGrid(node) {
+    const selectedCells = table.querySelectorAll('.selected');
+    selectedCells.forEach(cell => {
+        cell.classList.remove('selected');
+    });
+    const animatedCells = table.querySelectorAll('.animated');
+    animatedCells.forEach(cell => {
+        cell.classList.remove('animated');
+    });
+
+    for(let i = 1; i <= 8; ++i) {
+        for(let j = 1; j <= 12; ++j) {
+        const row = i;
+        const col = j;
+        mass = node.state[i][j].weight;
+        contName = node.state[i][j].label;
+        const cellElem = table.rows[7 - (row - 2)].cells[col - 1];
+        if (contName != 'UNUSED') {
+            cellElem.textContent = contName.trim();
+            cellElem.classList.add('selected');
+            console.log(`Highlighted cell: Row ${row}, Column ${col}`);
+        }      
+        else {
+            cellElem.textContent = '';
+        }  
+        }
+    }        
+}
+
 // Create the grid
-for (let i = 0; i < 8; i++) {
+// const pinkCellRow = document.createElement('tr');
+// const pinkCell = document.createElement('td');
+// pinkCellRow.appendChild(pinkCell);
+// table.appendChild(pinkCellRow);
+// pinkCell.classList.add('pinkCell');
+for (let i = 0; i < 9; i++) {
     const row = document.createElement('tr');
     for (let j = 0; j < 12; j++) {
         const cell = document.createElement('td');
         cell.textContent = `${8 - i},${j + 1}`;
+        //cell.textContent = ' ';
+        if(i == 0 && j != 0) {
+            break;
+        }
+        if(i == 0 && j == 0) {
+            cell.classList.add('pinkCell');
+        }
         row.appendChild(cell);
     }
-    table.appendChild(row);
+    table.appendChild(row);    
 }
 
-highlightBtn.addEventListener('click', () => {
+highlightBtn.addEventListener('click', () => {    
     const inputManifest = highlightFile.files[0]['path'];
     console.log(inputManifest);
     fs.readFile(inputManifest, 'utf8', async function(err, data) {
@@ -561,10 +603,8 @@ highlightBtn.addEventListener('click', () => {
         let ship = ParseData(data);
         let problem = new Node();
         problem.state = ship;
-        problem.ToUnload.push([1,4]);
-        problem.ToUnload.push([1,5]);
-        problem.ToLoad.push(new Container("Nat", 153));
-        problem.ToLoad.push(new Container("Rat", 2321));          
+        highlightGrid(problem);
+        problem.ToLoad.push(new Container("Bat", 431));      
         problem.search = 2;
         let begin = new Date().getTime();
         let result = general_search(problem, QUEUEING_FUNCTION);
@@ -593,8 +633,9 @@ highlightBtn.addEventListener('click', () => {
         }
         console.log("=======================================================================\n");
         
-        
+
         // const moves = JSON.parse(fileContents);
+        const node = Node.clone(problem);
         let paths = [];
         for(let i = 0; i < result.movePairs.length; ++i) {
             let path = GetPath(problem, result.movePairs[i][0], result.movePairs[i][1]);
@@ -602,6 +643,7 @@ highlightBtn.addEventListener('click', () => {
         }   
         const moves = paths;
         let moveIndex = 0;
+        let lastClickTime = 0;
         const moveInterval = setInterval(() => {
         if (moveIndex >= moves.length) {
             clearInterval(moveInterval);
@@ -609,6 +651,13 @@ highlightBtn.addEventListener('click', () => {
             return;
         }
         const move = moves[moveIndex];
+        if(move[move.length-1][0] > 9) {
+            move.splice(move.length-2);
+        } else if(move[1][0] > 9) {
+            move.splice(0, 2);
+        }
+        label = document.getElementById("solutionlabel");
+        label.innerHTML = result.moves[moveIndex];
         lastClickTime = 0;
         prevBtn.addEventListener('click', () => {
             const now = Date.now();
@@ -624,46 +673,83 @@ highlightBtn.addEventListener('click', () => {
             return;
             }
             lastClickTime = now;
-            if(moveIndex < moves.length-1){moveIndex+=1;}
-            else if(moveIndex == moves.length-1){
-            stepsfinishedpopup.showModal();
+            // console.log(moves);
+            src = moves[moveIndex][0];
+            // console.log(src);
+            dest = moves[moveIndex][moves[moveIndex].length-1];
+            // console.log(dest);
+            if(dest[0] >= 9) {
+                node.state[src[0]][src[1]] = new Container();
+            } else if(src[0] >= 9) {
+                const containerName = result.moves[moveIndex].split(" ")[1];
+
+                node.state[dest[0]][dest[1]] = new Container(containerName, 88);
+                //console.log(node.state[dest[0][dest[1]]].label);
+            } else {    
+                let temp = node.state[src[0]][src[1]];
+                node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
+                node.state[dest[0]][dest[1]] = temp;
+            }            
+            if(moveIndex < moves.length){ ++moveIndex; }
+            if(moveIndex == moves.length){
+                stepsfinishedpopup.showModal();
             }
+            label = document.getElementById("solutionlabel");
+            label.innerHtml = result.moves[moveIndex];
+            highlightGrid(node);
         });  
         resetBtn.addEventListener('click', () => {
+            const selectedCells = table.querySelectorAll('.selected');
+            selectedCells.forEach(cell => {
+                cell.textContent = ' ';
+                cell.classList.remove('selected');
+            });
+            const animatedCells = table.querySelectorAll('.animated');
+            animatedCells.forEach(cell => {
+                cell.classList.remove('animated');
+            });
             moveIndex = 0;
+            label = document.getElementById("solutionlabel");
+            label.innerHtml = '';
             clearInterval(moveInterval);
         });
         move.forEach((coord, index) => {
             setTimeout(() => {
             const [row, col] = coord;
-            const cell = table.rows[7-(row - 1)].cells[col - 1];
+            const cell = table.rows[7-(row - 2)].cells[col - 1];
+            if(cell.classList == 'pinkCell') {
+                cell.classList.remove('pinkCell');    
+            }
             cell.classList.add('animated');
             }, index * 500);
             setTimeout(() => {
             const [row, col] = coord;
-            const cell = table.rows[7-(row - 1)].cells[col - 1];
+            const cell = table.rows[7-(row - 2)].cells[col - 1];
             cell.classList.remove('animated');
+            if(row == 9 && col == 1) {
+                cell.classList.add('pinkCell');    
+            }
             }, index * 500 + 1000);
         });
         }, moves.length * 1000);
 
         closepopupBtn.addEventListener('click', () => {
             stepsfinishedpopup.close();
+            // Reset all cells to their original state
+            const selectedCells = table.querySelectorAll('.selected');
+            selectedCells.forEach(cell => {
+                cell.textContent = ' ';
+                cell.classList.remove('selected');
+            });
+            const animatedCells = table.querySelectorAll('.animated');
+            animatedCells.forEach(cell => {
+                cell.classList.remove('animated');
+            });
+            moveIndex = 0;
+            clearInterval(moveInterval);            
         });
       
-        // Reset all cells to their original state
-        resetBtn.addEventListener('click', () => {
-        // Reset all cells to their original state
-        const selectedCells = table.querySelectorAll('.selected');
-        selectedCells.forEach(cell => {
-            cell.classList.remove('selected');
-        });
-        const animatedCells = table.querySelectorAll('.animated');
-        animatedCells.forEach(cell => {
-            cell.classList.remove('animated');
-        });
-        moveIndex = 0;
-        clearInterval(moveInterval);
-        });
+        // resetBtn.addEventListener('click', () => {
+        // });
     });
 });
