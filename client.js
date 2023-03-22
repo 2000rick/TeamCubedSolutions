@@ -529,8 +529,6 @@ function GetPath(node, src, dest) {
 const table = document.querySelector('table');
 const highlightFile = document.querySelector('#highlight-file');
 const highlightBtn = document.querySelector('#highlight-btn');
-const movesFile = document.querySelector('#moves-file');
-const animateBtn = document.querySelector('#animate-btn');
 const resetBtn = document.querySelector('#reset-btn');    
 const prevBtn = document.querySelector('#prev-btn'); 
 const nextBtn = document.querySelector('#next-btn');   
@@ -557,7 +555,7 @@ function highlightGrid(node) {
         if (contName != 'UNUSED') {
             cellElem.textContent = contName.trim();
             cellElem.classList.add('selected');
-            console.log(`Highlighted cell: Row ${row}, Column ${col}`);
+            // console.log(`Highlighted cell: Row ${row}, Column ${col}`);
         }      
         else {
             cellElem.textContent = '';
@@ -576,8 +574,8 @@ for (let i = 0; i < 9; i++) {
     const row = document.createElement('tr');
     for (let j = 0; j < 12; j++) {
         const cell = document.createElement('td');
-        cell.textContent = `${8 - i},${j + 1}`;
-        //cell.textContent = ' ';
+        // cell.textContent = `${8 - i},${j + 1}`;
+        cell.textContent = ' ';
         if(i == 0 && j != 0) {
             break;
         }
@@ -616,7 +614,6 @@ highlightBtn.addEventListener('click', () => {
             result.solution();
             console.log("Total time to completion: " + result.cost + " minutes\n\n");
             console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
-            // WriteManifest(result.state, pathName.split('\\').pop());
         }
         else {
             let end = new Date().getTime();
@@ -625,7 +622,6 @@ highlightBtn.addEventListener('click', () => {
             result.solution();
             console.log("Total time to completion: " + result.cost + " minutes\n\n");
             console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
-            // WriteManifest(result.state, pathName.split('\\').pop());
         }
         console.log("=======================================================================\n");
         
@@ -643,7 +639,6 @@ highlightBtn.addEventListener('click', () => {
         const moveInterval = setInterval(() => {
         if (moveIndex >= moves.length) {
             clearInterval(moveInterval);
-            setTimeout(runAnimation, 1000); // call the function again after a delay
             return;
         }
         const move = moves[moveIndex];
@@ -669,18 +664,13 @@ highlightBtn.addEventListener('click', () => {
             return;
             }
             lastClickTime = now;
-            // console.log(moves);
             src = moves[moveIndex][0];
-            // console.log(src);
             dest = moves[moveIndex][moves[moveIndex].length-1];
-            // console.log(dest);
             if(dest[0] >= 9) {
                 node.state[src[0]][src[1]] = new Container();
             } else if(src[0] >= 9) {
-                const containerName = result.moves[moveIndex].split(" ")[1];
-
+                const containerName = result.moves[moveIndex].split(" ")[1]; // get container name to load
                 node.state[dest[0]][dest[1]] = new Container(containerName, 88);
-                //console.log(node.state[dest[0][dest[1]]].label);
             } else {    
                 let temp = node.state[src[0]][src[1]];
                 node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
@@ -730,6 +720,7 @@ highlightBtn.addEventListener('click', () => {
         }, moves.length * 1000);
 
         closepopupBtn.addEventListener('click', () => {
+            WriteManifest(result.state, inputManifest.split('\\').pop());
             stepsfinishedpopup.close();
             // Reset all cells to their original state
             const selectedCells = table.querySelectorAll('.selected');
@@ -744,8 +735,5 @@ highlightBtn.addEventListener('click', () => {
             moveIndex = 0;
             clearInterval(moveInterval);            
         });
-      
-        // resetBtn.addEventListener('click', () => {
-        // });
     });
 });
