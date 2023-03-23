@@ -146,7 +146,7 @@ function WriteManifest(ship, outputFile) {
 
 // https://www.geeksforgeeks.org/node-js-fs-chmod-method/
 async function WriteLog(path, text) {
-    datetime = await GetDateTime();
+    const datetime = await GetDateTime();
     text = datetime + ' ' + text + "\n";
     if(fs.existsSync(path))
         fs.chmodSync(path, 0o600); //Read/Write
@@ -527,7 +527,8 @@ function GetPath(node, src, dest) {
         }
     }
     // swap node state at src and dest
-    if(dest[0] >= 9) {
+    if(dest[0] >= 9 && src[0] >= 9) { // do nothing
+    } else if(dest[0] >= 9) {
         node.state[src[0]][src[1]] = new Container();
     } else if(src[0] >= 9) {
         node.state[dest[0]][dest[1]] = new Container("Occupied", 88);
@@ -573,7 +574,13 @@ function highlightGrid(node) {
         const cellElem = table.rows[7 - (row - 2)].cells[col - 1];
         if (contName != 'UNUSED') {
             cellElem.textContent = contName.trim();
-            cellElem.classList.add('selected');
+            if(contName == 'NAN') {
+                cellElem.classList.add('nan');
+                cellElem.textContent = ' ';
+            }
+            else {
+                cellElem.classList.add('selected');
+            }
             // console.log(`Highlighted cell: Row ${row}, Column ${col}`);
         }      
         else {
@@ -605,15 +612,16 @@ highlightBtn.addEventListener('click', () => {
     const inputManifest = highlightFile.files[0]['path'];
     const manifestName = inputManifest.split('\\').pop();
     WriteLog(logPath, "Manifest " + manifestName + " is opened.");
-    fs.readFile(inputManifest, 'utf8', async function(err, data) {
-        // let datetime = await GetDateTime();
-        // console.log(datetime);
+    fs.readFile(inputManifest, 'utf8', function(err, data) {
         if (err) throw err;
         let ship = ParseData(data);
         let problem = new Node();
         problem.state = ship;
         highlightGrid(problem);
-        problem.ToLoad.push(new Container("Bat", 431));      
+        problem.ToUnload.push([1,4]);
+        problem.ToUnload.push([1,5]);
+        problem.ToLoad.push(new Container("Nat", 153));
+        problem.ToLoad.push(new Container("Rat", 2321));     
         problem.search = 2;
         let begin = new Date().getTime();
         let result = general_search(problem, QUEUEING_FUNCTION);
@@ -641,7 +649,6 @@ highlightBtn.addEventListener('click', () => {
         console.log("=======================================================================\n");
         
 
-        // const moves = JSON.parse(fileContents);
         const node = Node.clone(problem);
         let paths = [];
         for(let i = 0; i < result.movePairs.length; ++i) {
@@ -663,11 +670,13 @@ highlightBtn.addEventListener('click', () => {
               clearInterval(moveInterval);
               return;
           }
-          const move = moves[moveIndex];
-          if(move[move.length-1][0] > 9) {
-              move.splice(move.length-2);
+          let move = moves[moveIndex];
+          if(move[move.length-1][0] >= 9 && move[1][0] > 9) {
+            move = [[9,1], [9,1]];
+          } else if(move[move.length-1][0] > 9) {
+            move.splice(move.length-2);
           } else if(move[1][0] > 9) {
-              move.splice(0, 2);
+            move.splice(0, 2);
           }
           label.innerHTML = result.moves[moveIndex];
           timelabel.innerHTML = "Time to completion: " + completionTime +  " minutes";
@@ -684,7 +693,8 @@ highlightBtn.addEventListener('click', () => {
               if(moveIndex != moves.length-1) {WriteLog(logPath, "Finished atomic operation: " + result.moves[moveIndex]);}
               src = moves[moveIndex][0];
               dest = moves[moveIndex][moves[moveIndex].length-1];
-              if(dest[0] >= 9) {
+              if(src[0] >= 9 && dest[0] >= 9) { //do mothing
+              } else if(dest[0] >= 9) {
                   node.state[src[0]][src[1]] = new Container();
               } else if(src[0] >= 9) {
                   const containerName = result.moves[moveIndex].split(" ")[1]; // get container name to load
@@ -725,9 +735,12 @@ highlightBtn.addEventListener('click', () => {
         }, 2000);
 
         closepopupBtn.addEventListener('click', () => {
-            stopped = true;
+            if(stopped == true) {
+                return;
+            }
             WriteManifest(result.state, inputManifest.split('\\').pop());
             WriteLog(logPath, "Manifest " + manifestName + " is closed.")
+            stopped = true;
             stepsfinishedpopup.close();
             // Reset all cells to their original state
             const selectedCells = table.querySelectorAll('.selected');
@@ -738,6 +751,10 @@ highlightBtn.addEventListener('click', () => {
             const animatedCells = table.querySelectorAll('.animated');
             animatedCells.forEach(cell => {
                 cell.classList.remove('animated');
+            });
+            const nanCells = table.querySelectorAll('.nan');
+            nanCells.forEach(cell => {
+                cell.classList.remove('nan');
             });
             moveIndex = 0;
             clearInterval(moveInterval);            
