@@ -659,73 +659,69 @@ highlightBtn.addEventListener('click', () => {
         }
         sumCompletionTime = completionTime;        
         const moveInterval = setInterval(() => {
-        console.log("move index: " + moveIndex);
-        console.log("move length: " + moves.length);
-        if (moveIndex >= moves.length) {
-            clearInterval(moveInterval);
-            return;
-        }
-        const move = moves[moveIndex];
-        if(move[move.length-1][0] > 9) {
-            move.splice(move.length-2);
-        } else if(move[1][0] > 9) {
-            move.splice(0, 2);
-        }
-        label.innerHTML = result.moves[moveIndex];
-        timelabel.innerHTML = "Time to complete: " + completionTime +  " minutes";
-        lastClickTime = 0;
-        nextBtn.addEventListener('click', () => {
-            if(stopped == true) {
-                return;
-            }
-            const now = Date.now();
-            if(now - lastClickTime < 1000) {
-            return;
-            }
-            lastClickTime = now;            
-            timelabel.innerHTML = "Time to complete: " + (completionTime) +  " minutes";
-            completionTime = completionTime - result.moves_cost[moveIndex];
-            if(moveIndex != moves.length-1) {WriteLog(logPath, "Finished atomic operation: " + result.moves[moveIndex]);}
-            src = moves[moveIndex][0];
-            dest = moves[moveIndex][moves[moveIndex].length-1];
-            if(dest[0] >= 9) {
-                node.state[src[0]][src[1]] = new Container();
-            } else if(src[0] >= 9) {
-                const containerName = result.moves[moveIndex].split(" ")[1]; // get container name to load
-                node.state[dest[0]][dest[1]] = new Container(containerName, 88);
-            } else {    
-                let temp = node.state[src[0]][src[1]];
-                node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
-                node.state[dest[0]][dest[1]] = temp;
-            }            
-            if(moveIndex < moves.length){ ++moveIndex; }
-            if(moveIndex == moves.length){
-                stepsfinishedpopup.showModal();
-            }
-            if(moveIndex != moves.length){
-                label.innerHTML = result.moves[moveIndex];
-                timelabel.innerHTML = " ";
-            }
-            highlightGrid(node);
-        });  
-        move.forEach((coord, index) => {
-            setTimeout(() => {
-            const [row, col] = coord;
-            const cell = table.rows[7-(row - 2)].cells[col - 1];
-            if(cell.classList == 'pinkCell') {
-                cell.classList.remove('pinkCell');    
-            }
-            cell.classList.add('animated');
-            }, index * 500);
-            setTimeout(() => {
-            const [row, col] = coord;
-            const cell = table.rows[7-(row - 2)].cells[col - 1];
-            cell.classList.remove('animated');
-            if(row == 9 && col == 1) {
-                cell.classList.add('pinkCell');    
-            }
-            }, index * 500 + 1000);
-        });
+          if (moveIndex >= moves.length) {
+              clearInterval(moveInterval);
+              return;
+          }
+          const move = moves[moveIndex];
+          if(move[move.length-1][0] > 9) {
+              move.splice(move.length-2);
+          } else if(move[1][0] > 9) {
+              move.splice(0, 2);
+          }
+          label.innerHTML = result.moves[moveIndex];
+          timelabel.innerHTML = "Time to completion: " + completionTime +  " minutes";
+          lastClickTime = 0;
+          nextBtn.addEventListener('click', () => {
+              if(stopped == true) {
+                  return;
+              }
+              const now = Date.now();
+              if(now - lastClickTime < 1000) { return; }
+              lastClickTime = now;            
+              timelabel.innerHTML = "Time to complete: " + (completionTime) +  " minutes";
+              completionTime = completionTime - result.moves_cost[moveIndex];
+              if(moveIndex != moves.length-1) {WriteLog(logPath, "Finished atomic operation: " + result.moves[moveIndex]);}
+              src = moves[moveIndex][0];
+              dest = moves[moveIndex][moves[moveIndex].length-1];
+              if(dest[0] >= 9) {
+                  node.state[src[0]][src[1]] = new Container();
+              } else if(src[0] >= 9) {
+                  const containerName = result.moves[moveIndex].split(" ")[1]; // get container name to load
+                  node.state[dest[0]][dest[1]] = new Container(containerName, 88);
+              } else {    
+                  let temp = node.state[src[0]][src[1]];
+                  node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
+                  node.state[dest[0]][dest[1]] = temp;
+              }            
+              if(moveIndex < moves.length){ ++moveIndex; }
+              if(moveIndex == moves.length){
+                  stepsfinishedpopup.showModal();
+              }
+              if(moveIndex != moves.length){
+                  label.innerHTML = result.moves[moveIndex];
+                  timelabel.innerHTML = " ";
+              }
+              highlightGrid(node);
+          });  
+          move.forEach((coord, index) => {
+              setTimeout(() => {
+              const [row, col] = coord;
+              const cell = table.rows[7-(row - 2)].cells[col - 1];
+              if(cell.classList == 'pinkCell') {
+                  cell.classList.remove('pinkCell');    
+              }
+              cell.classList.add('animated');
+              }, index * 500);
+              setTimeout(() => {
+              const [row, col] = coord;
+              const cell = table.rows[7-(row - 2)].cells[col - 1];
+              cell.classList.remove('animated');
+              if(row == 9 && col == 1) {
+                  cell.classList.add('pinkCell');    
+              }
+              }, index * 500 + 1000);
+          });
         }, 2000);
 
         closepopupBtn.addEventListener('click', () => {
@@ -756,7 +752,3 @@ commentBtn.addEventListener('click', () => {
     WriteLog(logPath, commentText);
     commentBox.value = '';
 });
-
-// clearcommentboxBtn.addEventListener('click', () => {
-//     commentBox.value = '';
-// });
