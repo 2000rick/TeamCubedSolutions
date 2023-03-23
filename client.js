@@ -1,9 +1,8 @@
 var fs = require('fs');
 const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
-import { AuthenticationModule } from './login-logout.js';
+const auth = require('./login-logout.js').auth;
 
-const auth = new AuthenticationModule();
 auth.login();
 
 class Container {

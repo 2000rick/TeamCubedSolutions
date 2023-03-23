@@ -4,7 +4,7 @@ const electron = require("electron");
     Component relating to logging in and logging out.
 */
 
-export class AuthenticationModule {
+class AuthenticationModule {
     currentLoggedInUser = "";
 
     login() {
@@ -25,3 +25,7 @@ export class AuthenticationModule {
         }
     }
 }
+
+module.exports = {
+    auth: new AuthenticationModule()
+};
