@@ -7,22 +7,21 @@ const electron = require("electron");
 class AuthenticationModule {
     currentLoggedInUser = "";
 
-    login() {
+    async login() {
+        let result;
         if (this.currentLoggedInUser == "") {
-            electron.ipcRenderer.invoke("prompt", {
+            result = await electron.ipcRenderer.invoke("prompt", {
                 title: "Authentication",
                 label: "No user logged in - enter your name:"
-            }).then(result => {
-                this.currentLoggedInUser = result;
             });
         } else {
-            electron.ipcRenderer.invoke("prompt", {
+            result = electron.ipcRenderer.invoke("prompt", {
                 title: "Authentication",
                 label: "Please enter your name:"
-            }).then(result => {
-                this.currentLoggedInUser = result;
             });
         }
+        this.currentLoggedInUser = result;
+        return result;
     }
 }
 

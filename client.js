@@ -2,8 +2,7 @@ var fs = require('fs');
 const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
 const auth = require('./login-logout.js').auth;
-
-auth.login();
+var pathImport = require('path');
 
 class Container {
   constructor(label = "UNUSED", weight = 0) {
@@ -556,6 +555,12 @@ const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
 const logYear = 2023; // This should be input from the user (at initial page load)
 const logPath = `${homeDir}\\Documents\\${"KeoghLongBeach"+logYear+".txt"}`;
+
+
+//TODO: Refactor logging into its own module so that other modules can access the code.
+auth.login().then(_ => {
+    WriteLog(logPath, auth.currentLoggedInUser + " has logged in.");
+});
 
 function highlightGrid(node) {
     const selectedCells = table.querySelectorAll('.selected');
