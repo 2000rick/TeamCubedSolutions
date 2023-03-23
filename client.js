@@ -2,7 +2,6 @@ var fs = require('fs');
 const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
 const auth = require('./login-logout.js').auth;
-var pathImport = require('path');
 
 class Container {
   constructor(label = "UNUSED", weight = 0) {
