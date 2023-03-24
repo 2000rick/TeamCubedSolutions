@@ -2,7 +2,7 @@
     A separate module to log changes to a file.
 */
 let currentYear = 2023;
-const logPath = `${homeDir}\\Documents\\${"KeoghLongBeach"+currentYear+".txt"}`;
+let logPath = `${homeDir}\\Documents\\${"KeoghLongBeach"+currentYear+".txt"}`;
 
 // we can use this function for log file purposes
 async function GetDateTime() {
@@ -17,6 +17,11 @@ class Logger {
     // https://www.geeksforgeeks.org/node-js-fs-chmod-method/
     async writeToFile(text) {
         const datetime = await GetDateTime();
+        const year = datetime.substring(7,11);
+        if(year != currentYear) {
+            console.log("Log points to previous year's log. Updating date and logpath.");
+            currentYear++;
+        }
         text = datetime + ' ' + text + "\n";
         if(fs.existsSync(logPath)) {
             fs.chmodSync(logPath, 0o600); //Read/Write
