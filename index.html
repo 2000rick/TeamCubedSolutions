@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
-  <title>replit</title>
+  <title>Crane Operator</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 
@@ -53,7 +53,7 @@
 
 <script>
 	document.getElementById('manifest_import_file').onchange = function() {
-		let filepath = document.getElementById('manifest_import_file').value.toString();
+		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		let filedelim = filepath.lastIndexOf('\\');
 		if (filedelim == -1) filedelim = filepath.lastIndexOf('/');
 		filepath = filepath.substring( filedelim+1 );
@@ -95,13 +95,13 @@
 	}
 
 	document.getElementById("load_ship_button").onclick = function() {
-		let filepath = document.getElementById('manifest_import_file').value.toString();
+		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		if (filepath != "")
 			window.location='move_crates.html?filepath='+filepath;
 	}
 	document.getElementById("balance_ship_button").onclick = function() {
-		let filepath = document.getElementById('manifest_import_file').value.toString();
+		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		if (document.getElementById('manifest_import_file').value != "")
-			window.location='balance.html?filepath='+filepath;
+			window.location='algorithm.html?filepath='+filepath + "&method=2";
 	}
 </script>

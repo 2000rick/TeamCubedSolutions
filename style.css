@@ -8,6 +8,13 @@ html {
 	
 }
 
+#allow_modify {
+	text-align: center;
+}
+#allow_load {
+	text-align: center;
+}
+
 #manifest_not_imported {
 	text-align: center;
 }
@@ -38,3 +45,52 @@ html {
   -webkit-user-select: none;
   touch-action: manipulation;
 }
+
+/* */
+#bar {
+	width: 40%;
+	height: 3.2rem;
+	text-align: center;
+	color: white;
+}
+
+td.interact_cell {
+	cursor: pointer;
+}
+
+table {
+      border-collapse: collapse;
+	  margin-left: auto;
+      
+      margin-right: auto;
+    }
+	
+    td  {
+      width: 50px;
+      height: 50px;
+      border: 1px solid black;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 24px;
+      font-weight: bold;
+      background-color: white;
+    }
+	
+    td.selected {
+      background-color: red;
+    }
+
+    td.nan {
+      background-color: black;
+    }
+
+    td.animated {
+      background-color: blue;
+    }
+
+	td.inuse {
+		background-color: lightblue;
+	}
+	td.chosen {
+		background-color: pink;
+	}
