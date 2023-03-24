@@ -19,8 +19,10 @@ const user = params.get("user");
 function updateButton(username) {
     if(username != null && userWelcomeNode != null) {
         auth.currentLoggedInUser = username;
+        submitCommentButton.disabled = false;
         userWelcomeNode.innerText = `Welcome, ${username}`;
     } else {
+        submitCommentButton.disabled = true;
         userWelcomeNode.innerText = `Nobody logged in.`;
     }
     userWelcomeNode.appendChild(loginButton);
