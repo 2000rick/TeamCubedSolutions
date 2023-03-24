@@ -41,17 +41,15 @@
 			</div>
 		</form>
 		<p>Ship Layout</p>
-		
-		<div id="ship_grid_layout">
-		</div>
-
-
+		<table id="table">
+		</table>
 	</div>
 </body>
 
 </html>
 
 <script>
+	
 	document.getElementById('manifest_import_file').onchange = function() {
 		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		let filedelim = filepath.lastIndexOf('\\');
@@ -62,6 +60,7 @@
 			document.getElementById("error_message_div").hidden = false;
 			document.getElementById('manifest_imported').hidden = true;
 			document.getElementById('manifest_message').innerHTML = "Import Manifest: ";
+			
 		}
 		else {
 			document.getElementById("error_message_div").hidden = true;
@@ -69,6 +68,10 @@
 			filepath = filepath.split("_")[2].split(".")[0];
 			document.getElementById('manifest_message').innerHTML = "You chose " + filepath;
 			document.getElementById('manifest_import_file').name = "Change File?";
+			fs.readFile(document.getElementById('manifest_import_file').files[0]['path'], 'utf-8', function (err, data) {
+				if (err) throw err;
+				fill_manifest_table(data);
+			});
 		}
 		
 	};
@@ -103,5 +106,64 @@
 		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		if (document.getElementById('manifest_import_file').value != "")
 			window.location='algorithm.html?filepath='+filepath + "&method=2";
+	}
+	
+	var fs = require("fs");
+
+	const table = document.querySelector('table');
+	for (let i = 0; i < 8; i++) {
+	      	const row = document.createElement('tr');
+	      	for (let j = 0; j < 12; j++) {
+			const cell = document.createElement('td');
+			cell.className = "";
+			cell.textContent = `${8 - i},${j + 1}`;
+			row.appendChild(cell);
+		}	
+		table.appendChild(row);
+	}
+	
+	function fill_manifest_table(result) {
+		var output = result.toString().split("\n");
+		for (let i = 0; i < output.length; i++) {
+			let line = output[i].split(", ");
+			let strpos = line[0].split(',');
+			let pos = [ Number(strpos[0].substring(1)) , Number(strpos[1].substring(0, strpos[1].length - 1)) ];
+			//console.log("["+ pos[0] + "," + pos[1] + "]");
+			let data = table.childNodes[9-pos[0]].childNodes[pos[1]-1];
+			if (line[2][line[2].length-1] == '\r') data.dataset.crate_name = line[2].substring(0,line[2].length - 1)
+			else data.dataset.crate_name = line[2];
+			console.log("*" + line[2] + "*");
+			
+			if (data.dataset.crate_name.toUpperCase().indexOf('NAN') == 0) {
+				console.log("nan at " + pos[0] + "," + pos[1]);
+				data.classList.add('nan');
+			}
+			else if (data.dataset.crate_name.toUpperCase().indexOf('UNUSED') == 0) {
+				console.log("unused at " + pos[0] + "," + pos[1]);
+			}
+			else {
+				data.classList.add('inuse');
+			}
+			
+			/*
+			switch (line[2].toString()) {
+				case "NAN":
+					alert("nan at " + pos[0] + "," + pos[1]);
+					data.classList.add('nan');
+					break;
+				case "UNUSED":
+					break;
+				default:
+					data.classList.add('inuse');
+					break
+			}
+			*/
+			
+			//console.log(data);
+					
+		}
+		
+		
+		
 	}
 </script>
