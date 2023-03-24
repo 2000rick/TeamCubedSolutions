@@ -259,14 +259,14 @@
 		for (let i = 0; i < load_table.length; i++) {
 			args += "[\"" + load_table[i] + "\"]";
 			if (i < load_table.length - 1) args += ",";
-			else args += "]";
 		}
+		args += "]";
 		args += "&unload=[";
 		for (let i = 0; i < unload_table.length; i++) {
 			args += "[" + unload_table[i][0] + "," + unload_table[i][1] + "]"
 			if (i < unload_table.length - 1) args += ",";
-			else args += "]";
 		}
+		args += "]";
 		window.location='algorithm.html' + args;
 	}
 </script>
