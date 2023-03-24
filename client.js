@@ -128,7 +128,7 @@ function WriteManifest(ship, outputFile) {
     let manifest = "";
     for(let i = 1; i <= 8; ++i) {
         for(let j = 1; j <= 12; ++j) {
-            manifest += `[${i.toString().padStart(2, '0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
+            manifest += `[${i.toString().padStart(2, '	0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
         }
     }
     if(fs.existsSync(output))
@@ -578,7 +578,13 @@ function BalanceImpossible(ship) {
 }
 
 const table = document.querySelector('table');
-const highlightFile = document.querySelector('#highlight-file');
+
+const url = new URL(window.location);
+const highlightFile = url.searchParams.get('filepath');
+const search_method = url.searchParams.get('method');
+const to_load = (search_method == 1) ? JSON.parse(url.searchParams.get('load')) : 0;
+const to_unload = (search_method == 1)  ? JSON.parse(url.searchParams.get('unload')) : 0;
+
 const highlightBtn = document.querySelector('#highlight-btn');
 const commentBtn = document.querySelector('#comment-btn');    
 const commentBox = document.querySelector('#commentBox');
@@ -644,7 +650,8 @@ for (let i = 0; i < 9; i++) {
 }
 
 highlightBtn.addEventListener('click', () => {    
-    const inputManifest = highlightFile.files[0]['path'];
+
+    const inputManifest = highlightFile;
     const manifestName = inputManifest.split('\\').pop();
     log.writeToFile("Manifest " + manifestName + " is opened.");
     fs.readFile(inputManifest, 'utf8', function(err, data) {
@@ -653,11 +660,14 @@ highlightBtn.addEventListener('click', () => {
         let problem = new Node();
         problem.state = ship;
         highlightGrid(problem);
-        problem.ToUnload.push([1,4]);
-        problem.ToUnload.push([1,5]);
-        problem.ToLoad.push(new Container("Nat", 153));
-        problem.ToLoad.push(new Container("Rat", 2321));     
-        problem.search = 2;
+        for (let i = 0; i < to_unload.length; i++) {
+            problem.ToUnload.push(to_unload[i]);
+        }
+        for (let i = 0; i < to_load.length; i++) {
+            let vals = to_load[i].toString().split(",,,");
+            problem.ToLoad.push(new Container(vals[0], Number(vals[1])));
+        }  
+        problem.search = search_method;
         let begin = new Date().getTime();
         if(problem.search == 2 && BalanceImpossible(problem.state)) {
             console.log("\nShip is impossible to balance. Now performing SIFT... ");
@@ -789,6 +799,8 @@ highlightBtn.addEventListener('click', () => {
             clearInterval(moveInterval);            
             label.innerHTML = " ";
             timelabel.innerHTML = " ";
+            
+            window.location='index.html';
         });
     });
 });

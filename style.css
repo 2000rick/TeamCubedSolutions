@@ -1,0 +1,107 @@
+html {
+  height: 100%;
+  width: 100%;
+}
+
+input {
+	font-size: 24px;
+}
+
+div {
+	font-size: 36px;
+}
+p {
+	font-size: 36px;
+}
+
+#title {
+	text-align: center;
+	
+}
+
+#allow_modify {
+	text-align: center;
+}
+#allow_load {
+	text-align: center;
+}
+
+#manifest_not_imported {
+	text-align: center;
+}
+#manifest_imported {
+	text-align: center;
+}
+
+/* https://getcssscan.com/css-buttons-examples */
+.button-2 {
+  background-color: rgba(51, 51, 51, 0.05);
+  border-radius: 8px;
+  border-width: 0;
+  color: #333333;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Haas Grot Text R Web", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  text-align: center;
+  transition: all 200ms;
+  vertical-align: baseline;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* */
+#bar {
+	width: 40%;
+	height: 3.2rem;
+	text-align: center;
+	color: white;
+}
+
+td.interact_cell {
+	cursor: pointer;
+}
+
+table {
+      border-collapse: collapse;
+	  margin-left: auto;
+      
+      margin-right: auto;
+    }
+	
+    td  {
+      width: 50px;
+      height: 50px;
+      border: 1px solid black;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 24px;
+      font-weight: bold;
+      background-color: white;
+    }
+	
+    td.selected {
+      background-color: red;
+    }
+
+    td.nan {
+      background-color: black;
+    }
+
+    td.animated {
+      background-color: blue;
+    }
+
+	td.inuse {
+		background-color: lightblue;
+	}
+	td.chosen {
+		background-color: pink;
+	}

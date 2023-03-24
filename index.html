@@ -2,127 +2,169 @@
 <html>
 
 <head>
-  <meta charset="UTF-8">
-  <title> Console </title>
-  <style>
-    .solutiontext {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 10px;
-      font-size: 36px;
-    }
-    #progress-bar {
-      height: 20px;
-      background-color: #f5f5f5;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    #progress-bar::after {
-      content: "";
-      display: block;
-      height: 100%;
-      background-color: #007aff;
-    }
-    #commentBox {
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-sizing: border-box;
-        font-size: 24px;
-        height: 100px;
-        padding: 10px;
-        resize: none;
-        width: 100%;
-    }
-    #stepsfinished-popup {
-      font-size: 30px;
-    }
-    #closePopup {
-      font-size: 30px;
-    }
-    #next-btn {
-      margin: 0 auto;
-      display: block;
-      font-size: 30px;
-    }
-    #comment-btn {
-      font-size: 24px;
-    }
-    #highlight-btn {
-      font-size: 24px;
-    }
-    #highlight-file {
-      font-size: 24px;
-    }
-
-    .inputlabel {
-      display: flex;
-      flex-direction: column;
-      margin-top:10px;
-      margin-bottom:10px;
-      font-size: 30px;
-    }
-    table {
-      margin: 0 auto;
-      border-collapse: collapse;
-    }
-
-    td {
-      width: 60px;
-      height: 60px;
-      border: 1px solid black;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 24px;
-      font-weight: bold;
-      background-color: white;
-    }
-
-    td.selected {
-      background-color: #EA5455;
-    }
-
-    td.nan {
-      background-color: gray;
-    }
-
-    td.animated {
-      background-color: #62CDFF;
-    }
-    
-    td.pinkCell {
-      background-color: pink;
-    }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Crane Operator</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
-  <label for="highlight-file" style="font-size: 24px;">Upload Manifest:</label>
-  <input type="file" id="highlight-file">
-  <button id="highlight-btn">Generate Moves</button>
-  <div class="solutiontext">
-    <label id="solutionlabel"></label>
-    <label id="estimatedtime"></label>
-  </div>
-  <table>
-    <tbody>
-      <!-- Grid is here -->
-    </tbody>
-  </table>  
-  <br> 
-  <button id="next-btn">Next Move</button>
-  <dialog id="stepsfinished-popup">
-    <h2>Congratulations, you are finished!</h2>
-    <p>Remember to email the updated Manifest to captain.</p>
-    <button id="closePopup">Finish</button>
-  </dialog>
-  <div class="inputlabel">
-    <label for="commentBox">Enter your comment:</label>
-  </div>
-  <textarea id="commentBox" name="commentBox" placeholder="Type your comment here..."></textarea>  
-  <button id="comment-btn">Add Comment</button>
+  	<h1 id="title">Crane Operator</h1>
+	<div id="error_message_div" hidden=true>
+		<p id="error_message_text">Error Message</p>
+	</div>
+	<h2 id="welcome_message">Welcome Bob Smith, <button class="button-2">Change User?</button></h2>
 
-  <script src="client.js"> </script>
+	<div style="text-align: center;">
+		<label for="manifest_import_button" id="manifest_message">Import Manifest: </label>
+		<input type="file" id="manifest_import_file" name="Choose File"></input>
+	</div>
+
+	<div id="manifest_imported" hidden=true>
+		<p>What do you wish to do?</p>
+
+		<button class="button-2" id="balance_ship_button">Balance Ship</button>
+		<p/>
+		<button class="button-2" id="load_ship_button">Load / Unload crates</button>
+
+		<p/>
+		<button class="button-2" id="insert_comment_button" onclick="enter_comment()">Add Comment</button>
+
+		<form action="" onsubmit="return false" method="get" class="submit-comment-form" hidden=true>
+			<div class="submit-comment-form"">
+				<p for="name">Enter Comment Here:</p>
+			    <textarea id="user_comment" maxlength="255"></textarea>
+			</div>
+			<div class="submit-comment-form"">
+			    <input type="submit" value="Submit" onclick="submit_comment()">
+				<button onclick="reset_form()">Cancel</button>
+			</div>
+		</form>
+		<p>Ship Layout</p>
+		<table id="table">
+		</table>
+	</div>
 </body>
 
 </html>
+
+<script>
+	
+	document.getElementById('manifest_import_file').onchange = function() {
+		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
+		let filedelim = filepath.lastIndexOf('\\');
+		if (filedelim == -1) filedelim = filepath.lastIndexOf('/');
+		filepath = filepath.substring( filedelim+1 );
+
+		if (manifest_file_err(filepath)) {
+			document.getElementById("error_message_div").hidden = false;
+			document.getElementById('manifest_imported').hidden = true;
+			document.getElementById('manifest_message').innerHTML = "Import Manifest: ";
+			
+		}
+		else {
+			document.getElementById("error_message_div").hidden = true;
+			document.getElementById('manifest_imported').hidden = false;
+			filepath = filepath.split("_")[2].split(".")[0];
+			document.getElementById('manifest_message').innerHTML = "You chose " + filepath;
+			document.getElementById('manifest_import_file').name = "Change File?";
+			fs.readFile(document.getElementById('manifest_import_file').files[0]['path'], 'utf-8', function (err, data) {
+				if (err) throw err;
+				fill_manifest_table(data);
+			});
+		}
+		
+	};
+	function manifest_file_err(filepath) {
+		if (filepath.toLowerCase().indexOf("manifest_for_") == -1) {
+			console.log(filepath.toLowerCase());
+			document.getElementById("error_message_text").innerText = "Please select a valid manifest file (Format = Manifest_for_{ShipName}.txt ) ";
+			return true;
+		}
+		return false;
+	}
+
+	function enter_comment() {
+		document.getElementsByClassName("submit-comment-form")[0].hidden = false;
+	}
+	function submit_comment() {
+		//Use value here
+		console.log(document.getElementById("user_comment").value);
+		reset_form();
+	}
+	function reset_form() {
+		document.getElementById("user_comment").value = '';
+		document.getElementsByClassName("submit-comment-form")[0].hidden = true;
+	}
+
+	document.getElementById("load_ship_button").onclick = function() {
+		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
+		if (filepath != "")
+			window.location='move_crates.html?filepath='+filepath;
+	}
+	document.getElementById("balance_ship_button").onclick = function() {
+		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
+		if (document.getElementById('manifest_import_file').value != "")
+			window.location='algorithm.html?filepath='+filepath + "&method=2";
+	}
+	
+	var fs = require("fs");
+
+
+	const table = document.querySelector('table');
+	for (let i = 0; i < 8; i++) {
+	      	const row = document.createElement('tr');
+	      	for (let j = 0; j < 12; j++) {
+			const cell = document.createElement('td');
+			cell.className = "";
+			cell.textContent = `${8 - i},${j + 1}`;
+			row.appendChild(cell);
+		}	
+		table.appendChild(row);
+	}
+	
+	function fill_manifest_table(result) {
+		var output = result.toString().split("\n");
+		for (let i = 0; i < output.length; i++) {
+			let line = output[i].split(", ");
+			let strpos = line[0].split(',');
+			let pos = [ Number(strpos[0].substring(1)) , Number(strpos[1].substring(0, strpos[1].length - 1)) ];
+			//console.log("["+ pos[0] + "," + pos[1] + "]");
+			let data = table.childNodes[9-pos[0]].childNodes[pos[1]-1];
+			if (line[2][line[2].length-1] == '\r') data.dataset.crate_name = line[2].substring(0,line[2].length - 1)
+			else data.dataset.crate_name = line[2];
+			console.log("*" + line[2] + "*");
+			
+			if (data.dataset.crate_name.toUpperCase().indexOf('NAN') == 0) {
+				console.log("nan at " + pos[0] + "," + pos[1]);
+				data.classList.add('nan');
+			}
+			else if (data.dataset.crate_name.toUpperCase().indexOf('UNUSED') == 0) {
+				console.log("unused at " + pos[0] + "," + pos[1]);
+			}
+			else {
+				data.classList.add('inuse');
+			}
+			
+			/*
+			switch (line[2].toString()) {
+				case "NAN":
+					alert("nan at " + pos[0] + "," + pos[1]);
+					data.classList.add('nan');
+					break;
+				case "UNUSED":
+					break;
+				default:
+					data.classList.add('inuse');
+					break
+			}
+			*/
+			
+			//console.log(data);
+					
+		}
+		
+		
+		
+	}
+</script>

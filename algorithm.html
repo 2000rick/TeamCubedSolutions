@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title> Console </title>
+  <style>
+    .solutiontext {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 36px;
+    }
+    #progress-bar {
+      height: 20px;
+      background-color: #f5f5f5;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #progress-bar::after {
+      content: "";
+      display: block;
+      height: 100%;
+      background-color: #007aff;
+    }
+    #commentBox {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 24px;
+        height: 100px;
+        padding: 10px;
+        resize: none;
+        width: 100%;
+    }
+    #stepsfinished-popup {
+      font-size: 30px;
+    }
+    #closePopup {
+      font-size: 30px;
+    }
+    #next-btn {
+      margin: 0 auto;
+      display: block;
+      font-size: 30px;
+    }
+    #comment-btn {
+      font-size: 24px;
+    }
+    #highlight-btn {
+      font-size: 24px;
+    }
+    #highlight-file {
+      font-size: 24px;
+    }
+
+    .inputlabel {
+      display: flex;
+      flex-direction: column;
+      margin-top:10px;
+      margin-bottom:10px;
+      font-size: 30px;
+    }
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+    }
+
+    td {
+      width: 60px;
+      height: 60px;
+      border: 1px solid black;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 24px;
+      font-weight: bold;
+      background-color: white;
+    }
+
+    td.selected {
+      background-color: #EA5455;
+    }
+
+    td.nan {
+      background-color: gray;
+    }
+
+    td.animated {
+      background-color: #62CDFF;
+    }
+    
+    td.pinkCell {
+      background-color: pink;
+    }
+  </style>
+</head>
+
+<body>
+  <br>
+  <button id="highlight-btn" style="text-align: center;">Generate Moves</button>
+  <br>
+  <div class="solutiontext">
+    <label id="solutionlabel"></label>
+    <label id="estimatedtime"></label>
+  </div>
+  <table>
+    <tbody>
+      <!-- Grid is here -->
+    </tbody>
+  </table>  
+  <br> 
+  <button id="next-btn">Next Move</button>
+  <dialog id="stepsfinished-popup">
+    <h2>Congratulations, you are finished!</h2>
+    <p>Remember to email the updated Manifest to captain.</p>
+    <button id="closePopup">Finish</button>
+  </dialog>
+  <div class="inputlabel">
+    <label for="commentBox">Enter your comment:</label>
+  </div>
+  <textarea id="commentBox" name="commentBox" placeholder="Type your comment here..."></textarea>  
+  <button id="comment-btn">Add Comment</button>
+
+  <script src="client.js"> </script>
+</body>
+
+</html>
