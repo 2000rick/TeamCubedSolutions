@@ -1,6 +1,8 @@
 var fs = require('fs');
 const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
+const auth = require('./login-logout.js').auth;
+const log = require('./logging.js');
 
 class Container {
   constructor(label = "UNUSED", weight = 0) {
@@ -14,10 +16,6 @@ class Node {
     this.state = new Array(9);
     for(let i=0; i<9; ++i) {
         this.state[i] = new Array(13);
-    }
-    this.buffer = new Array(5);
-    for(let i=0; i<5; ++i) {
-        this.buffer[i] = new Array(25);
     }
     this.OPERATORS = [];
     this.movePairs = [];
@@ -87,6 +85,7 @@ class Node {
       this.cost += Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1);
       this.moves.push("Restore crane to default position");
       this.moves_cost.push(Math.abs(this.crane[0] - 9) + Math.abs(this.crane[1] - 1));
+      this.movePairs.push([JSON.parse(JSON.stringify(this.crane)), [9, 1]]);
       this.crane = [9, 1];
   }
   // https://gist.github.com/GeorgeGkas/36f7a7f9a9641c2115a11d58233ebed2
@@ -100,7 +99,7 @@ class Node {
     );
   }
 }
-
+  
 function ParseData(data) {
   var lines = data.split("\r\n");
   let ship = new Array(9);
@@ -122,26 +121,21 @@ function ParseData(data) {
   return ship;
 }
 
+
 function WriteManifest(ship, outputFile) {
     const Desktop = `${homeDir}\\Desktop`;
     const output = `${Desktop}\\${outputFile.split(".")[0]}OUTBOUND.txt`;
     let manifest = "";
     for(let i = 1; i <= 8; ++i) {
         for(let j = 1; j <= 12; ++j) {
-            manifest += `[${i.toString().padStart(2, '0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
+            manifest += `[${i.toString().padStart(2, '	0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
         }
     }
+    if(fs.existsSync(output))
+        fs.chmodSync(output, 0o600); //Read/Write
     fs.writeFileSync(output, manifest);
-    // console.log(`Finished a cycle. Manifest ${outputFile.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
-}
-
-// we can use this function for log file purposes
-async function GetDateTime() {
-    let apiData = await fetch("http://worldtimeapi.org/api/timezone/America/Los_Angeles");
-    let data = await apiData.json();
-    datetime = new Date(data['datetime'].substring(0, 19)).toString();
-    let result = datetime.toString().substr(4,11) + ':' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
-    return result;
+    fs.chmodSync(output, 0o400); //Read Only permission
+    log.writeToFile(`Finished a cycle. Manifest ${output.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
 }
 
 function ManhattanHeuristic(node) {
@@ -471,7 +465,7 @@ function general_search(problem, QUEUEING_FUNCTION) {
   visited.add(JSON.stringify(nodes.peek().state));
   while(true) {
       queueMaxSize = Math.max(queueMaxSize, nodes.size);
-      if(nodes.isEmpty() || nodesExpanded >= 15000) {
+      if(nodes.isEmpty()) {
         let failure = new Node();
         failure.expanded = nodesExpanded;
         failure.queueSize = queueMaxSize;
@@ -517,7 +511,8 @@ function GetPath(node, src, dest) {
         }
     }
     // swap node state at src and dest
-    if(dest[0] >= 9) {
+    if(dest[0] >= 9 && src[0] >= 9) { // do nothing
+    } else if(dest[0] >= 9) {
         node.state[src[0]][src[1]] = new Container();
     } else if(src[0] >= 9) {
         node.state[dest[0]][dest[1]] = new Container("Occupied", 88);
@@ -529,72 +524,170 @@ function GetPath(node, src, dest) {
     return path;
 }
 
+// https://www.geeksforgeeks.org/partition-a-set-into-two-subsets-such-that-the-difference-of-subset-sums-is-minimum/
+// Returns a boolean, indicating whether the ship is impossible to balance
+function BalanceImpossible(ship) {
+    // Calculate total sum and get the non zero values
+    let weights = [];
+    let sum = 0;
+    for(let i = 1; i <= 8; ++i) {
+        for(let j = 1; j <= 12; ++j) {
+            if(ship[i][j].weight != 0) {
+                sum += ship[i][j].weight;
+                weights.push(ship[i][j].weight);
+            }
+        }
+    }
+    // Create an array to store results of subproblems
+    // https://stackoverflow.com/questions/50002593/initialize-a-two-dimensional-array-in-javascript
+    let dp = Array.from({length : weights.length + 1}, 
+        () => Array.from({length : sum + 1}, () => false)); 
+ 
+    // Initialize first column as true.
+    for (let i = 0; i <= weights.length; ++i)
+        dp[i][0] = true;
+ 
+    // Initialize top row, except dp[0][0], as false.
+    // With 0 elements, no other sum except 0 is possible
+    for (let i = 1; i <= sum; ++i)
+        dp[0][i] = false;
+ 
+    // Fill the partition table in bottom up manner
+    for (let i = 1; i <= weights.length; ++i) {
+        for (let j = 1; j <= sum; ++j) {
+            // If i'th element is excluded
+            dp[i][j] = dp[i - 1][j];
+ 
+            // If i'th element is included
+            if (weights[i - 1] <= j)
+                dp[i][j] |= dp[i - 1][j - weights[i - 1]];
+        }
+    }
+ 
+    // See whether the two subsets with the minimum difference have a difference within 10%
+    let left = 0; let right = 0;
+    for (let j = Math.floor(sum / 2); j >= 0; j--) {
+        if (dp[weights.length][j] == true) {
+            left = j;
+            right = sum - j;
+            return !( (Math.min(left, right) / Math.max(left, right)) > 0.9 ) ;
+        }
+    }
+
+    return false;
+}
+
 const table = document.querySelector('table');
-const highlightFile = document.querySelector('#highlight-file');
+
+const url = new URL(window.location);
+const highlightFile = url.searchParams.get('filepath');
+const search_method = url.searchParams.get('method');
+const to_load = (search_method == 1) ? JSON.parse(url.searchParams.get('load')) : 0;
+const to_unload = (search_method == 1)  ? JSON.parse(url.searchParams.get('unload')) : 0;
+
 const highlightBtn = document.querySelector('#highlight-btn');
-const movesFile = document.querySelector('#moves-file');
-const animateBtn = document.querySelector('#animate-btn');
-const resetBtn = document.querySelector('#reset-btn');    
-const prevBtn = document.querySelector('#prev-btn'); 
+const commentBtn = document.querySelector('#comment-btn');    
+const commentBox = document.querySelector('#commentBox');
 const nextBtn = document.querySelector('#next-btn');   
 const closepopupBtn = document.getElementById('closePopup'); 
+const label = document.getElementById("solutionlabel");
+const timelabel = document.getElementById("estimatedtime");
 const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
+auth.login();
+
+function highlightGrid(node) {
+    const selectedCells = table.querySelectorAll('.selected');
+    selectedCells.forEach(cell => {
+        cell.classList.remove('selected');
+    });
+    const animatedCells = table.querySelectorAll('.animated');
+    animatedCells.forEach(cell => {
+        cell.classList.remove('animated');
+    });
+
+    for(let i = 1; i <= 8; ++i) {
+        for(let j = 1; j <= 12; ++j) {
+        const row = i;
+        const col = j;
+        mass = node.state[i][j].weight;
+        contName = node.state[i][j].label;
+        const cellElem = table.rows[7 - (row - 2)].cells[col - 1];
+        if (contName != 'UNUSED') {
+            cellElem.textContent = contName.trim();
+            if(contName == 'NAN') {
+                cellElem.classList.add('nan');
+                cellElem.textContent = ' ';
+            }
+            else {
+                cellElem.classList.add('selected');
+            }
+            // console.log(`Highlighted cell: Row ${row}, Column ${col}`);
+        }      
+        else {
+            cellElem.textContent = '';
+        }  
+        }
+    }        
+}
+
 // Create the grid
-for (let i = 0; i < 8; i++) {
+for (let i = 0; i < 9; i++) {
     const row = document.createElement('tr');
     for (let j = 0; j < 12; j++) {
         const cell = document.createElement('td');
-        cell.textContent = `${8 - i},${j + 1}`;
+        // cell.textContent = `${8 - i},${j + 1}`;
+        cell.textContent = ' ';
+        if(i == 0 && j != 0) {
+            break;
+        }
+        if(i == 0 && j == 0) {
+            cell.classList.add('pinkCell');
+        }
         row.appendChild(cell);
     }
-    table.appendChild(row);
+    table.appendChild(row);    
 }
 
-highlightBtn.addEventListener('click', () => {
-    const inputManifest = highlightFile.files[0]['path'];
-    console.log(inputManifest);
-    fs.readFile(inputManifest, 'utf8', async function(err, data) {
-        // let datetime = await GetDateTime();
-        // console.log(datetime);
+highlightBtn.addEventListener('click', () => {    
+    const inputManifest = highlightFile;
+    const manifestName = inputManifest.split('\\').pop();
+    log.writeToFile("Manifest " + manifestName + " is opened.");
+    fs.readFile(inputManifest, 'utf8', function(err, data) {
         if (err) throw err;
         let ship = ParseData(data);
         let problem = new Node();
         problem.state = ship;
-        problem.ToUnload.push([1,4]);
-        problem.ToUnload.push([1,5]);
-        problem.ToLoad.push(new Container("Nat", 153));
-        problem.ToLoad.push(new Container("Rat", 2321));          
-        problem.search = 2;
+        highlightGrid(problem);
+        for (let i = 0; i < to_unload.length; i++) {
+            problem.ToUnload.push(to_unload[i]);
+        }
+        for (let i = 0; i < to_load.length; i++) {
+            let vals = to_load[i].toString().split(",,,");
+            problem.ToLoad.push(new Container(vals[0], Number(vals[1])));
+        }  
+        problem.search = search_method;
         let begin = new Date().getTime();
-        let result = general_search(problem, QUEUEING_FUNCTION);
-        if(result.fail) {
+        if(problem.search == 2 && BalanceImpossible(problem.state)) {
             console.log("\nShip is impossible to balance. Now performing SIFT... ");
             problem.search = 3;
             let siftItems = SIFT_STATE(problem);
             problem.siftContainers = siftItems[0];
             problem.siftCoordinates = siftItems[1];
-            result = general_search(problem, QUEUEING_FUNCTION);
-            end = new Date().getTime();
-            console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
-            result.solution();
-            console.log("Total time to completion: " + result.cost + " minutes\n\n");
-            console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
-            // WriteManifest(result.state, pathName.split('\\').pop());
         }
-        else {
+        let result = general_search(problem, QUEUEING_FUNCTION);
+        if(result.fail) {
+            console.log("Something has gone wrong. Devs, please check your code. :(");
+        } else {
             let end = new Date().getTime();
             console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
-            console.log("\nSUCCESS\n");
             result.solution();
             console.log("Total time to completion: " + result.cost + " minutes\n\n");
             console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
-            // WriteManifest(result.state, pathName.split('\\').pop());
         }
         console.log("=======================================================================\n");
         
-        
-        // const moves = JSON.parse(fileContents);
+        const node = Node.clone(problem);
         let paths = [];
         for(let i = 0; i < result.movePairs.length; ++i) {
             let path = GetPath(problem, result.movePairs[i][0], result.movePairs[i][1]);
@@ -602,68 +695,117 @@ highlightBtn.addEventListener('click', () => {
         }   
         const moves = paths;
         let moveIndex = 0;
-        const moveInterval = setInterval(() => {
-        if (moveIndex >= moves.length) {
-            clearInterval(moveInterval);
-            setTimeout(runAnimation, 1000); // call the function again after a delay
-            return;
+        let lastClickTime = 0;
+        let completionTime = 0;
+        let sumCompletionTime = 0;
+        let stopped = false;
+        for(let i = 0; i < moves.length; i++) {
+            completionTime += result.moves_cost[i];
         }
-        const move = moves[moveIndex];
-        lastClickTime = 0;
-        prevBtn.addEventListener('click', () => {
-            const now = Date.now();
-            if(now - lastClickTime < 1000) {
-            return;
-            }
-            lastClickTime = now;
-            if(moveIndex > 0){moveIndex-=1;}
-        });  
-        nextBtn.addEventListener('click', () => {
-            const now = Date.now();
-            if(now - lastClickTime < 1000) {
-            return;
-            }
-            lastClickTime = now;
-            if(moveIndex < moves.length-1){moveIndex+=1;}
-            else if(moveIndex == moves.length-1){
-            stepsfinishedpopup.showModal();
-            }
-        });  
-        resetBtn.addEventListener('click', () => {
-            moveIndex = 0;
-            clearInterval(moveInterval);
-        });
-        move.forEach((coord, index) => {
-            setTimeout(() => {
-            const [row, col] = coord;
-            const cell = table.rows[7-(row - 1)].cells[col - 1];
-            cell.classList.add('animated');
-            }, index * 500);
-            setTimeout(() => {
-            const [row, col] = coord;
-            const cell = table.rows[7-(row - 1)].cells[col - 1];
-            cell.classList.remove('animated');
-            }, index * 500 + 1000);
-        });
-        }, moves.length * 1000);
+        sumCompletionTime = completionTime;        
+        const moveInterval = setInterval(() => {
+          if (moveIndex >= moves.length) {
+              clearInterval(moveInterval);
+              return;
+          }
+          let move = moves[moveIndex];
+          if(move[move.length-1][0] >= 9 && move[1][0] > 9) {
+            move = [[9,1], [9,1]];
+          } else if(move[move.length-1][0] > 9) {
+            move.splice(move.length-2);
+          } else if(move[1][0] > 9) {
+            move.splice(0, 2);
+          }
+          label.innerHTML = result.moves[moveIndex];
+          timelabel.innerHTML = "Time to completion: " + completionTime +  " minutes";
+          lastClickTime = 0;
+          nextBtn.addEventListener('click', () => {
+              if(stopped == true) {
+                  return;
+              }
+              const now = Date.now();
+              if(now - lastClickTime < 1000) { return; }
+              lastClickTime = now;            
+              timelabel.innerHTML = "Time to complete: " + (completionTime) +  " minutes";
+              completionTime = completionTime - result.moves_cost[moveIndex];
+              if(moveIndex != moves.length-1) {log.writeToFile("Finished atomic operation: " + result.moves[moveIndex]);}
+              src = moves[moveIndex][0];
+              dest = moves[moveIndex][moves[moveIndex].length-1];
+              if(src[0] >= 9 && dest[0] >= 9) { //do mothing
+              } else if(dest[0] >= 9) {
+                  node.state[src[0]][src[1]] = new Container();
+              } else if(src[0] >= 9) {
+                  const containerName = result.moves[moveIndex].split(" ")[1]; // get container name to load
+                  node.state[dest[0]][dest[1]] = new Container(containerName, 88);
+              } else {    
+                  let temp = node.state[src[0]][src[1]];
+                  node.state[src[0]][src[1]] = node.state[dest[0]][dest[1]];
+                  node.state[dest[0]][dest[1]] = temp;
+              }            
+              if(moveIndex < moves.length){ ++moveIndex; }
+              if(moveIndex == moves.length){
+                  stepsfinishedpopup.showModal();
+              }
+              if(moveIndex != moves.length){
+                  label.innerHTML = result.moves[moveIndex];
+                  timelabel.innerHTML = " ";
+              }
+              highlightGrid(node);
+          });  
+          move.forEach((coord, index) => {
+              setTimeout(() => {
+              const [row, col] = coord;
+              const cell = table.rows[7-(row - 2)].cells[col - 1];
+              if(cell.classList == 'pinkCell') {
+                  cell.classList.remove('pinkCell');    
+              }
+              cell.classList.add('animated');
+              }, index * 500);
+              setTimeout(() => {
+              const [row, col] = coord;
+              const cell = table.rows[7-(row - 2)].cells[col - 1];
+              cell.classList.remove('animated');
+              if(row == 9 && col == 1) {
+                  cell.classList.add('pinkCell');    
+              }
+              }, index * 500 + 1000);
+          });
+        }, 2000);
 
         closepopupBtn.addEventListener('click', () => {
+            if(stopped == true) {
+                return;
+            }
+            WriteManifest(result.state, inputManifest.split('\\').pop());
+            log.writeToFile("Manifest " + manifestName + " is closed.")
+            stopped = true;
             stepsfinishedpopup.close();
-        });
-      
-        // Reset all cells to their original state
-        resetBtn.addEventListener('click', () => {
-        // Reset all cells to their original state
-        const selectedCells = table.querySelectorAll('.selected');
-        selectedCells.forEach(cell => {
-            cell.classList.remove('selected');
-        });
-        const animatedCells = table.querySelectorAll('.animated');
-        animatedCells.forEach(cell => {
-            cell.classList.remove('animated');
-        });
-        moveIndex = 0;
-        clearInterval(moveInterval);
+            // Reset all cells to their original state
+            const selectedCells = table.querySelectorAll('.selected');
+            selectedCells.forEach(cell => {
+                cell.textContent = ' ';
+                cell.classList.remove('selected');
+            });
+            const animatedCells = table.querySelectorAll('.animated');
+            animatedCells.forEach(cell => {
+                cell.classList.remove('animated');
+            });
+            const nanCells = table.querySelectorAll('.nan');
+            nanCells.forEach(cell => {
+                cell.classList.remove('nan');
+            });
+            moveIndex = 0;
+            clearInterval(moveInterval);            
+            label.innerHTML = " ";
+            timelabel.innerHTML = " ";
+            
+            window.location='index.html';
         });
     });
+});
+
+commentBtn.addEventListener('click', () => {
+    const commentText = `[${auth.currentLoggedInUser}]: ` + commentBox.value;
+    log.writeToFile(commentText);
+    commentBox.value = '';
 });
