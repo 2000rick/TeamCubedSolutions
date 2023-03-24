@@ -1,122 +1,128 @@
+<!DOCTYPE html>
 <html>
+
 <head>
-	<link href="style.css" rel="stylesheet" type="text/css" />
-</head>
-<body onload="init_func()">
-	<h1 id="title">Work On Ship</h1>
-
-	<div id="error_message_div" hidden=true>
-		<p id="error_message_text">Error Message</p>
-	</div>
-	
-	<div id="allow_modify" hidden=true>
-		<h2 id="ship_name">Current Ship: INSERT_SHIP_NAME</h2>
-
-		<div class="solutiontext">
-			<label id="solutionlabel"></label>
-			<label id="estimatedtime"></label>
-		</div>
-
-		
-		<table>
-			</tbody>
-			</tbody>
-		</table>
-		
-		<!-- Simple progress bar
-		<h2 style="display:inline">Progress: </h2>
-		<progress id="bar" value=75 max=100></progress>
-		<p id="time_till_completion">Time till completion: </p>
-		-->
-
-		<button class="button-2" id="next-btn">Next Move</button>
-		
-		<br>
-		<dialog id="stepsfinished-popup">
-			<h2>Congratulations, you are finished!</h2>
-			<p>Remember to email the updated Manifest to captain.</p>
-			<button id="closePopup">Finish</button>
-		</dialog>
-		<br>
-		
-		<!-- Comment Section -->
-		<button class="button-2" id="insert_comment_button" onclick="enter_comment()">Add Comment</button>
-
-		<form action="" onsubmit="return false" method="get" class="submit-comment-form" hidden=true>
-			<div class="submit-comment-form"">
-				<p for="name">Enter Comment Here:</p>
-			    <textarea id="user_comment" maxlength="255"></textarea>
-			</div>
-			<div class="submit-comment-form"">
-			    <input type="submit" value="Submit" onclick="submit_comment()">
-				<button onclick="reset_form()">Cancel</button>
-			</div>
-		</form>
-	</div>
-	
-	
-</body>
-</html>
-
-<script>
-	var url = new URL(window.location);
-	var manifest_file = url.searchParams.get('filepath');
-	
-	var search_method = url.searchParams.get('method'); //1 for load/unload, 2 for balance
-	
-	// If load/unload
-	var to_load = (search_method == 1) ? JSON.parse(url.searchParams.get('load')) : 0;
-	var to_unload = (search_method == 1)  ? JSON.parse(url.searchParams.get('unload')) : 0;
-	
-	const table = document.querySelector('table');
-	const resetBtn = document.querySelector('#reset-btn');    
-	const prevBtn = document.querySelector('#prev-btn'); 
-	const nextBtn = document.querySelector('#next-btn');  
-
-	//Create Table
-	for (let i = 0; i < 8; i++) {
-      const row = document.createElement('tr');
-      for (let j = 0; j < 12; j++) {
-        const cell = document.createElement('td');
-        cell.textContent = `${8 - i},${j + 1}`;
-        row.appendChild(cell);
-      }
-      table.appendChild(row);
+  <meta charset="UTF-8">
+  <title> Console </title>
+  <style>
+    .solutiontext {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 36px;
     }
-	
+    #progress-bar {
+      height: 20px;
+      background-color: #f5f5f5;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #progress-bar::after {
+      content: "";
+      display: block;
+      height: 100%;
+      background-color: #007aff;
+    }
+    #commentBox {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 24px;
+        height: 100px;
+        padding: 10px;
+        resize: none;
+        width: 100%;
+    }
+    #stepsfinished-popup {
+      font-size: 30px;
+    }
+    #closePopup {
+      font-size: 30px;
+    }
+    #next-btn {
+      margin: 0 auto;
+      display: block;
+      font-size: 30px;
+    }
+    #comment-btn {
+      font-size: 24px;
+    }
+    #highlight-btn {
+      font-size: 24px;
+    }
+    #highlight-file {
+      font-size: 24px;
+    }
 
-	function init_func() {
-		//url = new URL(window.location);
-		//manifest_file = url.searchParams.get('filepath');
-		
-		if (search_method == 1) document.getElementById("title").innerText = "Load / Unload Containers"
-		else document.getElementById("title").innerText = "Balance Ship"
-		if (manifest_file != null) {
-			let manifest_name = manifest_file.toString().substring(manifest_file.toString().lastIndexOf('_')+1, manifest_file.toString().lastIndexOf('.'));
-			document.getElementById("ship_name").innerHTML = "Current Ship: " + manifest_name;
-			document.getElementById("allow_modify").hidden = false;
-			
-			
-		}
-		else {
-			document.getElementById("error_message_div").hidden = false;
-			let home_path = url.href.toString().substring(0, url.href.lastIndexOf("/"));
-			document.getElementById("error_message_text").innerHTML = "No manifest file selected... Go back to <a href=\"" + home_path +"\">main menu</a>";
-		}
-	}
+    .inputlabel {
+      display: flex;
+      flex-direction: column;
+      margin-top:10px;
+      margin-bottom:10px;
+      font-size: 30px;
+    }
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+    }
 
-	// Comment Functions
-	function enter_comment() {
-		document.getElementsByClassName("submit-comment-form")[0].hidden = false;
-	}
-	function submit_comment() {
-		//Use value here
-		const commentText = `[${auth.currentLoggedInUser}]: ` + commentBox.value;
-    		log.writeToFile(commentText);
-		reset_form();
-	}
-	function reset_form() {
-		document.getElementById("user_comment").value = '';
-		document.getElementsByClassName("submit-comment-form")[0].hidden = true;
-	}
-</script>
+    td {
+      width: 60px;
+      height: 60px;
+      border: 1px solid black;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 24px;
+      font-weight: bold;
+      background-color: white;
+    }
+
+    td.selected {
+      background-color: #EA5455;
+    }
+
+    td.nan {
+      background-color: gray;
+    }
+
+    td.animated {
+      background-color: #62CDFF;
+    }
+    
+    td.pinkCell {
+      background-color: pink;
+    }
+  </style>
+</head>
+
+<body>
+  <br>
+  <button id="highlight-btn" style="text-align: center;">Generate Moves</button>
+  <br>
+  <div class="solutiontext">
+    <label id="solutionlabel"></label>
+    <label id="estimatedtime"></label>
+  </div>
+  <table>
+    <tbody>
+      <!-- Grid is here -->
+    </tbody>
+  </table>  
+  <br> 
+  <button id="next-btn">Next Move</button>
+  <dialog id="stepsfinished-popup">
+    <h2>Congratulations, you are finished!</h2>
+    <p>Remember to email the updated Manifest to captain.</p>
+    <button id="closePopup">Finish</button>
+  </dialog>
+  <div class="inputlabel">
+    <label for="commentBox">Enter your comment:</label>
+  </div>
+  <textarea id="commentBox" name="commentBox" placeholder="Type your comment here..."></textarea>  
+  <button id="comment-btn">Add Comment</button>
+
+  <script src="client.js"> </script>
+</body>
+
+</html>
