@@ -597,7 +597,6 @@ const table = document.querySelector('table');
 const highlightFile = document.querySelector('#highlight-file');
 const highlightBtn = document.querySelector('#highlight-btn');
 const commentBtn = document.querySelector('#comment-btn');    
-const clearcommentboxBtn = document.querySelector('#clearcommentbox-btn');
 const commentBox = document.querySelector('#commentBox');
 const nextBtn = document.querySelector('#next-btn');   
 const closepopupBtn = document.getElementById('closePopup'); 
