@@ -14,6 +14,7 @@
 
 		<span >Load: </span>
 		<input type="text" id="load_text"></input> 
+		<input type="text" id="load_weight"></input> 
 		<button class="button-2" id="add_load_btn" onclick="add_load_text()">Add to load list</button>
 		<p style="font-weight: bold">Load list</p>
 		<select id="load_table" size=1>
@@ -183,9 +184,10 @@
 	// Load / Unload
 	function add_unload_text() {
 		let un_txt = document.getElementById("unload_text");
-		if (add_unload(un_txt.value)) {
+		if (add_unload(un_txt.value  + ", [" + crate_list[un_txt.value][0].toString() + "]")) {
 		
 			let pos = crate_list[un_txt.value][0];
+			unload_table.push(pos);
 			let data = table.childNodes[9-pos[0]].childNodes[pos[1]-1];
 			data.classList.add('chosen');
 			
@@ -202,6 +204,7 @@
 					data.classList.remove('selected');
 					data.classList.add('chosen');
 					if (add_unload(data.dataset.crate_name)) {
+						unload_table.push([9-i,j+1]);
 						let un_txt = document.getElementById("unload_text");
 						for (let k = 0; k < un_txt.length; k++) {
 							if (un_txt.options[k].value == data.dataset.crate_name) { 
@@ -224,15 +227,16 @@
 			let new_el = document.createElement('option');
 			new_el.innerText = text;
 			unload_tb.appendChild(new_el);
-			unload_table.push(text);
 			return true;
 		}
 		return false;
 	}
 
 	function add_load_text() {
-		add_load(document.getElementById("load_text").value);
+		add_load(document.getElementById("load_text").value + ", " + document.getElementById("load_weight").value);
+		load_table.push(document.getElementById("load_text").value + ",,," + document.getElementById("load_weight").value);
 		document.getElementById("load_text").value = "";
+		document.getElementById("load_weight").value = "";
 	}
 	function add_load(text) {
 		if (text != "") {
@@ -241,7 +245,7 @@
 			let new_el = document.createElement('option');
 			new_el.innerText = text;
 			load_tb.appendChild(new_el);
-			load_table.push(text);
+			
 		}
 	}
 
@@ -251,13 +255,13 @@
 		args += "&method=1";
 		args += "&load=[";
 		for (let i = 0; i < load_table.length; i++) {
-			args += "\"" + load_table[i] + "\"";
+			args += "[\"" + load_table[i] + "\"]";
 			if (i < load_table.length - 1) args += ",";
 			else args += "]";
 		}
 		args += "&unload=[";
 		for (let i = 0; i < unload_table.length; i++) {
-			args += "\"" + unload_table[i] + "\"";
+			args += "[" + unload_table[i][0] + "," + unload_table[i][1] + "]"
 			if (i < unload_table.length - 1) args += ",";
 			else args += "]";
 		}
