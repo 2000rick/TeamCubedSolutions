@@ -70,9 +70,10 @@
         const cell = document.createElement('td');
 		cell.className = "interact_cell";
 		cell.addEventListener( 'click', function(){
-			if (this.classList.contains('inuse') || this.classList.contains('selected'))
-	  			this.classList.toggle('selected');
-	  			this.classList.toggle('inuse');
+			if(!this.classList.contains("nan") && !this.classList.contains("unused")) {
+				this.classList.toggle('selected');
+				this.classList.toggle('inuse');
+			}
 		} );
         cell.textContent = `${8 - i},${j + 1}`;
         row.appendChild(cell);
@@ -128,13 +129,13 @@
 			if (line[2][line[2].length-1] == '\r') data.dataset.crate_name = line[2].substring(0,line[2].length - 1)
 			else data.dataset.crate_name = line[2];
 			//console.log("*" + line[2] + "*");
-			
 			if (data.dataset.crate_name.toUpperCase().indexOf('NAN') == 0) {
 				console.log("nan at " + pos[0] + "," + pos[1]);
 				data.classList.add('nan');
 			}
 			else if (data.dataset.crate_name.toUpperCase().indexOf('UNUSED') == 0) {
 				console.log("unused at " + pos[0] + "," + pos[1]);
+				data.classList.add('unused');
 			}
 			else {
 				data.classList.add('inuse');
