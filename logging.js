@@ -12,7 +12,7 @@ async function GetDateTime() {
     const year = Number(monthAndDate.substring(0,4));
     const month = Number(monthAndDate.substring(5,7));
     const date = Number(monthAndDate.substring(8,10));
-    if (month == 12 && date > 25) { // First, check if we have opened the program during the "going dark" time. In this case, 
+    if (month == 12 && date > 25 && year != currentYear + 1) { // First, check if we have opened the program during the "going dark" time. In this case, 
         currentYear++;
     } else if (year != currentYear) { //If it is not the "going dark" period, just make sure that the year is correct for the sake of the path.
         currentYear = year;
