@@ -16,7 +16,7 @@ class AuthenticationModule {
                 label: "No user logged in - enter your name:"
             });
         } else {
-            result = electron.ipcRenderer.invoke("prompt", {
+            result = await electron.ipcRenderer.invoke("prompt", {
                 title: "Authentication",
                 label: "Please enter your name:"
             });

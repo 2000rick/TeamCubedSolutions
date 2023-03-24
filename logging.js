@@ -2,7 +2,7 @@
     A separate module to log changes to a file.
 */
 let currentYear = 2023;
-let logPath = `${homeDir}\\Documents\\${"KeoghLongBeach"+currentYear+".txt"}`;
+const { ipcRenderer } = require("electron");
 
 // we can use this function for log file purposes
 async function GetDateTime() {
@@ -25,8 +25,10 @@ async function GetDateTime() {
 class Logger {
     // https://www.geeksforgeeks.org/node-js-fs-chmod-method/
     async writeToFile(text) {
+        const pathPrefix = await ipcRenderer.invoke("log");
         const datetime = await GetDateTime();
         text = datetime + ' ' + text + "\n";
+        let logPath = `${pathPrefix}/KeoghLongBeach${currentYear}.txt`
         if(fs.existsSync(logPath)) {
             fs.chmodSync(logPath, 0o600); //Read/Write
         }

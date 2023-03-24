@@ -1,8 +1,16 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
-const prompt = require('electron-prompt')
+const prompt = require('electron-prompt');
+const { homedir } = require('os');
 const path = require('path')
 
 const registerIPC = () => {
+  ipcMain.handle("log", (_) => {
+    if (process.platform === 'darwin' || process.platform === "linux") {
+      return `${homedir()}/Documents/`;
+    } else {
+      return `${homedir()}\\Documents\\`;
+    }
+  });
   ipcMain.handle("prompt", (_, promptOptions) => {
     return prompt(promptOptions);
   });
