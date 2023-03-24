@@ -83,26 +83,6 @@
 	function enter_comment() {
 		document.getElementsByClassName("submit-comment-form")[0].hidden = false;
 	}
-	function submit_comment() {
-		//Use value here
-		// console.log(document.getElementById("user_comment").value);
-		// reset_form();
-	}
-	function reset_form() {
-		// document.getElementById("user_comment").value = '';
-		// document.getElementsByClassName("submit-comment-form")[0].hidden = true;
-	}
-
-	document.getElementById("load_ship_button").onclick = function() {
-		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
-		if (filepath != "")
-			window.location='move_crates.html?filepath='+filepath+`&user=`;
-	}
-	document.getElementById("balance_ship_button").onclick = function() {
-		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
-		if (document.getElementById('manifest_import_file').value != "")
-			window.location='algorithm.html?filepath='+filepath + "&method=2";
-	}
 	
 	var fs = require("fs");
 

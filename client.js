@@ -1,7 +1,7 @@
 var fs = require('fs');
 const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
-const auth = require('./login-logout.js').auth;
+// const auth = require('./login-logout.js').auth;
 const log = require('./logging.js');
 
 class Container {
@@ -594,7 +594,7 @@ const label = document.getElementById("solutionlabel");
 const timelabel = document.getElementById("estimatedtime");
 const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
-auth.login();
+// auth.login();
 
 function highlightGrid(node) {
     const selectedCells = table.querySelectorAll('.selected');
