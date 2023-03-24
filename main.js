@@ -1,9 +1,12 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
+const prompt = require('electron-prompt')
 const path = require('path')
-// const dialog = require('electron').dialog;
-// var fs = require('fs');
-// const homeDir = require('os').homedir();
-// var FastPriorityQueue = require('fastpriorityqueue');
+
+const registerIPC = () => {
+  ipcMain.handle("prompt", (_, promptOptions) => {
+    return prompt(promptOptions);
+  });
+}
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -15,11 +18,12 @@ const createWindow = () => {
         contextIsolation: false
       }
     })
-  
+    win.maximize();
     win.loadFile('index.html')
 }
 
 app.whenReady().then(() => {
+    registerIPC();
     createWindow()
 })
 

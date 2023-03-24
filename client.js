@@ -650,6 +650,7 @@ for (let i = 0; i < 9; i++) {
 }
 
 highlightBtn.addEventListener('click', () => {    
+
     const inputManifest = highlightFile;
     const manifestName = inputManifest.split('\\').pop();
     log.writeToFile("Manifest " + manifestName + " is opened.");
