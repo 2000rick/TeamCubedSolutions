@@ -588,10 +588,7 @@ const label = document.getElementById("solutionlabel");
 const timelabel = document.getElementById("estimatedtime");
 const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
-//TODO: Refactor logging into its own module so that other modules can access the code.
-auth.login().then(_ => {
-    log.writeToFile(auth.currentLoggedInUser + " has logged in.");
-});
+auth.login();
 
 function highlightGrid(node) {
     const selectedCells = table.querySelectorAll('.selected');

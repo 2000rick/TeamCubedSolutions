@@ -1,4 +1,5 @@
 const electron = require("electron");
+const log = require("./logging.js");
 
 /*
     Component relating to logging in and logging out.
@@ -21,6 +22,7 @@ class AuthenticationModule {
             });
         }
         this.currentLoggedInUser = result;
+        log.writeToFile(`${result} has logged in.`);
         return result;
     }
 }
