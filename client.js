@@ -482,7 +482,7 @@ function general_search(problem, QUEUEING_FUNCTION) {
   visited.add(JSON.stringify(nodes.peek().state));
   while(true) {
       queueMaxSize = Math.max(queueMaxSize, nodes.size);
-      if(nodes.isEmpty() || nodesExpanded >= 15000) {
+      if(nodes.isEmpty()) {
         let failure = new Node();
         failure.expanded = nodesExpanded;
         failure.queueSize = queueMaxSize;
@@ -541,11 +541,63 @@ function GetPath(node, src, dest) {
     return path;
 }
 
+// https://www.geeksforgeeks.org/partition-a-set-into-two-subsets-such-that-the-difference-of-subset-sums-is-minimum/
+// Returns a boolean, indicating whether the ship is impossible to balance
+function BalanceImpossible(ship) {
+    // Calculate total sum and get the non zero values
+    let weights = [];
+    let sum = 0;
+    for(let i = 1; i <= 8; ++i) {
+        for(let j = 1; j <= 12; ++j) {
+            if(ship[i][j].weight != 0) {
+                sum += ship[i][j].weight;
+                weights.push(ship[i][j].weight);
+            }
+        }
+    }
+    // Create an array to store results of subproblems
+    // https://stackoverflow.com/questions/50002593/initialize-a-two-dimensional-array-in-javascript
+    let dp = Array.from({length : weights.length + 1}, 
+        () => Array.from({length : sum + 1}, () => false)); 
+ 
+    // Initialize first column as true.
+    for (let i = 0; i <= weights.length; ++i)
+        dp[i][0] = true;
+ 
+    // Initialize top row, except dp[0][0], as false.
+    // With 0 elements, no other sum except 0 is possible
+    for (let i = 1; i <= sum; ++i)
+        dp[0][i] = false;
+ 
+    // Fill the partition table in bottom up manner
+    for (let i = 1; i <= weights.length; ++i) {
+        for (let j = 1; j <= sum; ++j) {
+            // If i'th element is excluded
+            dp[i][j] = dp[i - 1][j];
+ 
+            // If i'th element is included
+            if (weights[i - 1] <= j)
+                dp[i][j] |= dp[i - 1][j - weights[i - 1]];
+        }
+    }
+ 
+    // See whether the two subsets with the minimum difference have a difference within 10%
+    let left = 0; let right = 0;
+    for (let j = Math.floor(sum / 2); j >= 0; j--) {
+        if (dp[weights.length][j] == true) {
+            left = j;
+            right = sum - j;
+            return !( (Math.min(left, right) / Math.max(left, right)) > 0.9 ) ;
+        }
+    }
+
+    return false;
+}
+
 const table = document.querySelector('table');
 const highlightFile = document.querySelector('#highlight-file');
 const highlightBtn = document.querySelector('#highlight-btn');
 const commentBtn = document.querySelector('#comment-btn');    
-const clearcommentboxBtn = document.querySelector('#clearcommentbox-btn');
 const commentBox = document.querySelector('#commentBox');
 const nextBtn = document.querySelector('#next-btn');   
 const closepopupBtn = document.getElementById('closePopup'); 
@@ -631,31 +683,25 @@ highlightBtn.addEventListener('click', () => {
         problem.ToLoad.push(new Container("Rat", 2321));     
         problem.search = 2;
         let begin = new Date().getTime();
-        let result = general_search(problem, QUEUEING_FUNCTION);
-        if(result.fail) {
+        if(problem.search == 2 && BalanceImpossible(problem.state)) {
             console.log("\nShip is impossible to balance. Now performing SIFT... ");
             problem.search = 3;
             let siftItems = SIFT_STATE(problem);
             problem.siftContainers = siftItems[0];
             problem.siftCoordinates = siftItems[1];
-            result = general_search(problem, QUEUEING_FUNCTION);
-            end = new Date().getTime();
-            console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
-            result.solution();
-            console.log("Total time to completion: " + result.cost + " minutes\n\n");
-            console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
         }
-        else {
+        let result = general_search(problem, QUEUEING_FUNCTION);
+        if(result.fail) {
+            console.log("Something has gone wrong. Devs, please check your code. :(");
+        } else {
             let end = new Date().getTime();
             console.log("\nTime Elapsed: " + (end - begin) + " milliseconds\n");
-            console.log("\nSUCCESS\n");
             result.solution();
             console.log("Total time to completion: " + result.cost + " minutes\n\n");
             console.log("Solution Depth: " + (result.moves.length-1) + "\nNodes Expanded: " + result.expanded + "\nMax Queue Size: " + result.queueSize);
         }
         console.log("=======================================================================\n");
         
-
         const node = Node.clone(problem);
         let paths = [];
         for(let i = 0; i < result.movePairs.length; ++i) {
