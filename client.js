@@ -2,6 +2,7 @@ var fs = require('fs');
 const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
 const auth = require('./login-logout.js').auth;
+const log = require('./logging.js');
 
 class Container {
   constructor(label = "UNUSED", weight = 0) {
@@ -120,14 +121,6 @@ function ParseData(data) {
   return ship;
 }
 
-// we can use this function for log file purposes
-async function GetDateTime() {
-    let apiData = await fetch("http://worldtimeapi.org/api/timezone/America/Los_Angeles");
-    let data = await apiData.json();
-    datetime = new Date(data['datetime'].substring(0, 19)).toString();
-    let result = datetime.toString().substr(4,11) + ':' + datetime.toString().substr(15, 6) + ' ' + data['abbreviation'];
-    return result;
-}
 
 function WriteManifest(ship, outputFile) {
     const Desktop = `${homeDir}\\Desktop`;
@@ -142,17 +135,7 @@ function WriteManifest(ship, outputFile) {
         fs.chmodSync(output, 0o600); //Read/Write
     fs.writeFileSync(output, manifest);
     fs.chmodSync(output, 0o400); //Read Only permission
-    WriteLog(logPath, `Finished a cycle. Manifest ${output.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
-}
-
-// https://www.geeksforgeeks.org/node-js-fs-chmod-method/
-async function WriteLog(path, text) {
-    const datetime = await GetDateTime();
-    text = datetime + ' ' + text + "\n";
-    if(fs.existsSync(path))
-        fs.chmodSync(path, 0o600); //Read/Write
-    fs.appendFileSync(path, text);
-    fs.chmodSync(path, 0o444); //Changes File to Read Only
+    log.writeToFile(`Finished a cycle. Manifest ${output.split('\\').pop()} was written to Desktop, and a reminder pop-up to operator to send file was displayed.`);
 }
 
 function ManhattanHeuristic(node) {
@@ -605,13 +588,9 @@ const label = document.getElementById("solutionlabel");
 const timelabel = document.getElementById("estimatedtime");
 const stepsfinishedpopup = document.getElementById('stepsfinished-popup');
 
-const logYear = 2023; // This should be input from the user (at initial page load)
-const logPath = `${homeDir}\\Documents\\${"KeoghLongBeach"+logYear+".txt"}`;
-
-
 //TODO: Refactor logging into its own module so that other modules can access the code.
 auth.login().then(_ => {
-    WriteLog(logPath, auth.currentLoggedInUser + " has logged in.");
+    log.writeToFile(auth.currentLoggedInUser + " has logged in.");
 });
 
 function highlightGrid(node) {
@@ -670,7 +649,7 @@ for (let i = 0; i < 9; i++) {
 highlightBtn.addEventListener('click', () => {    
     const inputManifest = highlightFile.files[0]['path'];
     const manifestName = inputManifest.split('\\').pop();
-    WriteLog(logPath, "Manifest " + manifestName + " is opened.");
+    log.writeToFile("Manifest " + manifestName + " is opened.");
     fs.readFile(inputManifest, 'utf8', function(err, data) {
         if (err) throw err;
         let ship = ParseData(data);
@@ -743,7 +722,7 @@ highlightBtn.addEventListener('click', () => {
               lastClickTime = now;            
               timelabel.innerHTML = "Time to complete: " + (completionTime) +  " minutes";
               completionTime = completionTime - result.moves_cost[moveIndex];
-              if(moveIndex != moves.length-1) {WriteLog(logPath, "Finished atomic operation: " + result.moves[moveIndex]);}
+              if(moveIndex != moves.length-1) {log.writeToFile("Finished atomic operation: " + result.moves[moveIndex]);}
               src = moves[moveIndex][0];
               dest = moves[moveIndex][moves[moveIndex].length-1];
               if(src[0] >= 9 && dest[0] >= 9) { //do mothing
@@ -792,7 +771,7 @@ highlightBtn.addEventListener('click', () => {
                 return;
             }
             WriteManifest(result.state, inputManifest.split('\\').pop());
-            WriteLog(logPath, "Manifest " + manifestName + " is closed.")
+            log.writeToFile("Manifest " + manifestName + " is closed.")
             stopped = true;
             stepsfinishedpopup.close();
             // Reset all cells to their original state
@@ -818,7 +797,7 @@ highlightBtn.addEventListener('click', () => {
 });
 
 commentBtn.addEventListener('click', () => {
-    const commentText = "[Placeholder Name]: " + commentBox.value;
-    WriteLog(logPath, commentText);
+    const commentText = `[${auth.currentLoggedInUser}]: ` + commentBox.value;
+    log.writeToFile(commentText);
     commentBox.value = '';
 });
