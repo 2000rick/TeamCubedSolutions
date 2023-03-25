@@ -3,6 +3,7 @@ const homeDir = require('os').homedir();
 var FastPriorityQueue = require('fastpriorityqueue');
 const authentication = require('./login-logout.js').auth;
 const log = require('./logging.js');
+const { ipcRenderer } = require('electron');
 
 class Container {
   constructor(label = "UNUSED", weight = 0) {
@@ -122,9 +123,10 @@ function ParseData(data) {
 }
 
 
-function WriteManifest(ship, outputFile) {
-    const Desktop = `${homeDir}\\Desktop`;
-    const output = `${Desktop}\\${outputFile.split(".")[0]}OUTBOUND.txt`;
+async function WriteManifest(ship, outputFile) {
+    const symbol = await ipcRenderer.invoke("delimiter");
+    const Desktop = await ipcRenderer.invoke("manifest");
+    const output = `${Desktop}${symbol}${outputFile.split(".")[0]}OUTBOUND.txt`;
     let manifest = "";
     for(let i = 1; i <= 8; ++i) {
         for(let j = 1; j <= 12; ++j) {
@@ -771,7 +773,7 @@ highlightBtn.addEventListener('click', () => {
             if(stopped == true) {
                 return;
             }
-            WriteManifest(result.state, inputManifest.split('\\').pop());
+            WriteManifest(result.state, inputManifest.split('\\').pop()); //TODO: Change delimiter depending on OS
             await log.writeToFile("Manifest " + manifestName + " is closed.");
             stopped = true;
             stepsfinishedpopup.close();

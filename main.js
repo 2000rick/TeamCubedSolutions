@@ -11,6 +11,20 @@ const registerIPC = () => {
       return `${homedir()}\\Documents\\`;
     }
   });
+  ipcMain.handle("manifest", (_) => {
+    if (process.platform === 'darwin' || process.platform === "linux") {
+      return `${homedir()}/Desktop/`;
+    } else {
+      return `${homedir()}\\Desktop\\`;
+    }
+  });
+  ipcMain.handle("delimiter", (_) => {
+    if (process.platform === 'darwin' || process.platform === "linux") {
+      return "/";
+    } else {
+      return "\\";
+    }
+  })
   ipcMain.handle("prompt", (_, promptOptions) => {
     return prompt(promptOptions);
   });
