@@ -48,13 +48,13 @@ function init_func() {
 }
 //Open table functions
 function open_unload_table() {
-    if (document.getElementById("open_table_btn").innerText == "Select from table?") {
-        document.getElementById("open_table_btn").innerText = "Fill in text?";
+    if (document.getElementById("open_table_btn").innerText == "Select from table") {
+        document.getElementById("open_table_btn").innerText = "Fill in text";
         document.getElementById("unload_table_selector").hidden = false;
         document.getElementById("unload_text_selector").hidden = true;
     }
     else {
-        document.getElementById("open_table_btn").innerText = "Select from table?";
+        document.getElementById("open_table_btn").innerText = "Select from table";
         document.getElementById("unload_table_selector").hidden = true;
         document.getElementById("unload_text_selector").hidden = false;
     }
@@ -86,43 +86,11 @@ function fill_manifest_table(result) {
             let new_el = document.createElement('option');
             new_el.innerText = data.dataset.crate_name;
             document.getElementById("unload_text").appendChild(new_el);
-        }
-        
-        /*
-        switch (line[2].toString()) {
-            case "NAN":
-                alert("nan at " + pos[0] + "," + pos[1]);
-                data.classList.add('nan');
-                break;
-            case "UNUSED":
-                break;
-            default:
-                data.classList.add('inuse');
-                break
-        }
-        */
-        
-        //console.log(data);
-                
+        }               
     }
     
     
     
-}
-
-
-// Comment Functions
-function enter_comment() {
-    document.getElementsByClassName("submit-comment-form")[0].hidden = false;
-}
-function submit_comment() {
-    //Use value here
-    console.log(document.getElementById("user_comment").value);
-    reset_form();
-}
-function reset_form() {
-    document.getElementById("user_comment").value = '';
-    document.getElementsByClassName("submit-comment-form")[0].hidden = true;
 }
 
 // Load / Unload
@@ -141,9 +109,9 @@ function add_unload_text() {
 
 function add_unload_table() {
     for (let i = 0; i < table.childNodes.length; i++) {
-          row = table.childNodes[i];
+          let row = table.childNodes[i];
         for (let j = 0; j < row.childNodes.length; j++) {
-               data = row.childNodes[j];
+               let data = row.childNodes[j];
             if (data.className.toString().indexOf("selected") != -1) {
                 data.classList.remove('selected');
                 data.classList.add('chosen');
@@ -181,12 +149,16 @@ const integersOnly = /^[0-9]{1,5}$/;
 function add_load_text() {
     const weight = document.getElementById("load_weight").value;
     if(integersOnly.test(weight) == false) {
-        return; //Reject input.
+        document.getElementById("error_message_div").hidden = false;
+        document.getElementById("error_message_text").innerText = "Invalid input for new container weight. Try again.";
+    } else {
+        document.getElementById("error_message_div").hidden = true;
+        document.getElementById("error_message_text").innerText = "";
+        add_load(document.getElementById("load_text").value + ", " + document.getElementById("load_weight").value);
+        load_table.push(document.getElementById("load_text").value + ",,," + document.getElementById("load_weight").value);
+        document.getElementById("load_text").value = "";
+        document.getElementById("load_weight").value = "";
     }
-    add_load(document.getElementById("load_text").value + ", " + document.getElementById("load_weight").value);
-    load_table.push(document.getElementById("load_text").value + ",,," + document.getElementById("load_weight").value);
-    document.getElementById("load_text").value = "";
-    document.getElementById("load_weight").value = "";
 }
 function add_load(text) {
     if (text != "") {
@@ -228,9 +200,3 @@ document.getElementById("unload_table_selector_btn").addEventListener("click", a
 document.getElementById("generate_moves_btn").addEventListener("click", generate_move_page);
 
 init_func();
-export default function getLoadUnloadTables() {
-    return {
-        unload: unload_table,
-        load: load_table
-    }
-}
