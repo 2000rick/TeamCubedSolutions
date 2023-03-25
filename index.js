@@ -1,9 +1,8 @@
-const logging = require("./logging");
-
 /*
     The JS file associated with index.html.
 */
 const auth = require("./login-logout").auth;
+const logging = require("./logging");
 
 const userWelcomeNode = document.getElementById("welcome_message");
 const loginButton = document.getElementById("login");
