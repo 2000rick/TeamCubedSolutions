@@ -39,24 +39,3 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
-
-/*
-    problem.ToUnload.push([1, 2]); //Case 1 unload only
-
-    problem.ToLoad.push(new Container("Bat", 431)); //Case 2 load only
-
-    case 3: load & unload
-    problem.ToUnload.push([1, 2]);
-    problem.ToLoad.push(new Container("Bat", 532));
-    problem.ToLoad.push(new Container("Rat", 6317));
-
-    case 4: load & unload
-    problem.ToUnload.push([7,5]);
-    problem.ToLoad.push(new Container("Nat", 2543));
-
-    case 5: load & unload
-    problem.ToUnload.push([1,4]);
-    problem.ToUnload.push([1,5]);
-    problem.ToLoad.push(new Container("Nat", 153));
-    problem.ToLoad.push(new Container("Rat", 2321));
-*/
