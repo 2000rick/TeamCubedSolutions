@@ -72,5 +72,4 @@ if(balanceButton != null) {
     });
 }
 
-console.log(auth.currentLoggedInUser);
 updateButton(user);
