@@ -176,7 +176,13 @@ function add_unload(text) {
     return false;
 }
 
+const integersOnly = /^[0-9]{1,5}$/;
+
 function add_load_text() {
+    const weight = document.getElementById("load_weight").value;
+    if(integersOnly.test(weight) == false) {
+        return; //Reject input.
+    }
     add_load(document.getElementById("load_text").value + ", " + document.getElementById("load_weight").value);
     load_table.push(document.getElementById("load_text").value + ",,," + document.getElementById("load_weight").value);
     document.getElementById("load_text").value = "";
