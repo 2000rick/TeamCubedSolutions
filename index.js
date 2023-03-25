@@ -11,6 +11,7 @@ const cancelCommentButton = document.getElementById("cancel_comment_button");
 const commentForm = document.getElementById("user_comment");
 const commentFormBody = document.getElementsByClassName("submit-comment-form")[0];
 
+const uploadManifestButton = document.getElementById("manifest_import_file");
 const loadUnloadButton = document.getElementById("load_ship_button");
 const balanceButton = document.getElementById("balance_ship_button");
 
@@ -19,15 +20,21 @@ const params = new URL(window.location).searchParams;
 const user = params.get("user");
 
 function updateButton(username) {
-    if(username != null && userWelcomeNode != null) {
+    if((username != null && username != "") && userWelcomeNode != null) {
         auth.currentLoggedInUser = username;
         if(submitCommentButton != null) {
             submitCommentButton.disabled = false;
+        }
+        if(uploadManifestButton != null) {
+            uploadManifestButton.disabled = false;
         }
         userWelcomeNode.innerText = `Current Operator: ${username}`;
     } else {
         if(submitCommentButton != null) {
             submitCommentButton.disabled = true;
+        }
+        if(uploadManifestButton != null) {
+            uploadManifestButton.disabled = true;
         }
         userWelcomeNode.innerText = `No operator logged in currently.`;
     }
@@ -37,6 +44,10 @@ function updateButton(username) {
 function hideCommentForm() {
     commentForm.value = "";
     commentFormBody.hidden = true;
+}
+
+function appendLoggedInUser(urlString) {
+    return `${urlString}&user=${auth.currentLoggedInUser}`;
 }
 
 if(submitCommentButton != null) {
@@ -60,7 +71,7 @@ if(loadUnloadButton != null) {
     loadUnloadButton.addEventListener("click", () => {
         let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		if (filepath != "")
-        window.location=`move_crates.html?filepath=${filepath}&user=${auth.currentLoggedInUser}`;
+        window.location=appendLoggedInUser(`move_crates.html?filepath=${filepath}`);
     });
 }
 
@@ -68,7 +79,7 @@ if(balanceButton != null) {
     balanceButton.addEventListener("click", () => {
         let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		if (document.getElementById('manifest_import_file').value != "")
-			window.location=`algorithm.html?filepath=${filepath}&method=2&user=${auth.currentLoggedInUser}`;
+			window.location=appendLoggedInUser(`algorithm.html?filepath=${filepath}&method=2`);
     });
 }
 

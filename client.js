@@ -773,7 +773,8 @@ highlightBtn.addEventListener('click', () => {
             if(stopped == true) {
                 return;
             }
-            WriteManifest(result.state, inputManifest.split('\\').pop()); //TODO: Change delimiter depending on OS
+            const delimiter = await ipcRenderer.invoke("delimiter");
+            WriteManifest(result.state, inputManifest.split(delimiter).pop());
             await log.writeToFile("Manifest " + manifestName + " is closed.");
             stopped = true;
             stepsfinishedpopup.close();
