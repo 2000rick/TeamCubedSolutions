@@ -9,11 +9,11 @@
 </head>
 
 <body>
-  	<h1 id="title">Crane Operator</h1>
+	<h1 id="title">Crane Operator</h1>
 	<div id="error_message_div" hidden=true>
 		<p id="error_message_text">Error Message</p>
 	</div>
-	<h2 id="welcome_message">Welcome Bob Smith, <button class="button-2">Change User?</button></h2>
+	<h2 id="welcome_message">Welcome Bob Smith, <button id="login" class="button-2">Change User?</button></h2>
 
 	<div style="text-align: center;">
 		<label for="manifest_import_button" id="manifest_message">Import Manifest: </label>
@@ -30,26 +30,22 @@
 		<p/>
 		<button class="button-2" id="insert_comment_button" onclick="enter_comment()">Add Comment</button>
 
-		<form action="" onsubmit="return false" method="get" class="submit-comment-form" hidden=true>
-			<div class="submit-comment-form"">
-				<p for="name">Enter Comment Here:</p>
-			    <textarea id="user_comment" maxlength="255"></textarea>
-			</div>
-			<div class="submit-comment-form"">
-			    <input type="submit" value="Submit" onclick="submit_comment()">
-				<button onclick="reset_form()">Cancel</button>
-			</div>
-		</form>
+		<div class="submit-comment-form" hidden="true">
+			<label for="user_comment">Enter Comment Here:</label>
+			<input id="user_comment" maxlength="255" type="text">
+			<button id="submit_comment_button">Submit</button>
+			<button id="cancel_comment_button">Cancel</button>
+		</div>
 		<p>Ship Layout</p>
 		<table id="table">
 		</table>
 	</div>
+	<script src="index.js"></script>
 </body>
 
 </html>
 
 <script>
-	
 	document.getElementById('manifest_import_file').onchange = function() {
 		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
 		let filedelim = filepath.lastIndexOf('\\');
@@ -86,26 +82,6 @@
 
 	function enter_comment() {
 		document.getElementsByClassName("submit-comment-form")[0].hidden = false;
-	}
-	function submit_comment() {
-		//Use value here
-		console.log(document.getElementById("user_comment").value);
-		reset_form();
-	}
-	function reset_form() {
-		document.getElementById("user_comment").value = '';
-		document.getElementsByClassName("submit-comment-form")[0].hidden = true;
-	}
-
-	document.getElementById("load_ship_button").onclick = function() {
-		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
-		if (filepath != "")
-			window.location='move_crates.html?filepath='+filepath;
-	}
-	document.getElementById("balance_ship_button").onclick = function() {
-		let filepath = document.getElementById('manifest_import_file').files[0]['path'];
-		if (document.getElementById('manifest_import_file').value != "")
-			window.location='algorithm.html?filepath='+filepath + "&method=2";
 	}
 	
 	var fs = require("fs");
