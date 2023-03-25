@@ -3,7 +3,7 @@
 	<link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body onload="init_func()">
-	<h1>Add / Remove Crates</h1>
+	<h1>Add / Remove Containers</h1>
 
 	<div id="error_message_div" hidden=true>
 		<p id="error_message_text">Error Message</p>
@@ -36,7 +36,7 @@
 			<table id="table">
 			</table>
 			<p></p>
-			<button class="button-2" id="unload_table_selector_btn" onclick="add_unload_table()">Select Crate?</button>
+			<button class="button-2" id="unload_table_selector_btn" onclick="add_unload_table()">Select Containers</button>
 			<p></p>
 		</div>
 		<p style="font-weight: bold">Unload list</p>
@@ -88,8 +88,7 @@
 		//manifest_file = url.searchParams.get('filepath');
 		
 		if (manifest_file != null) {
-			
-			let manifest_name = manifest_file.toString().substring(manifest_file.toString().lastIndexOf('_')+1, manifest_file.toString().lastIndexOf('.'));
+			let manifest_name = manifest_file.toString().split('\\').pop().split('.')[0];
 			document.getElementById("ship_name").innerHTML = "Current Ship: " + manifest_name;
 			document.getElementById("allow_load").hidden = false;
 			//https://www.tutorialspoint.com/how-to-read-and-write-a-file-using-javascript
@@ -124,17 +123,15 @@
 			let line = output[i].split(", ");
 			let strpos = line[0].split(',');
 			let pos = [ Number(strpos[0].substring(1)) , Number(strpos[1].substring(0, strpos[1].length - 1)) ];
-			//console.log("["+ pos[0] + "," + pos[1] + "]");
 			let data = table.childNodes[9-pos[0]].childNodes[pos[1]-1];
 			if (line[2][line[2].length-1] == '\r') data.dataset.crate_name = line[2].substring(0,line[2].length - 1)
 			else data.dataset.crate_name = line[2];
-			//console.log("*" + line[2] + "*");
 			if (data.dataset.crate_name.toUpperCase().indexOf('NAN') == 0) {
-				console.log("nan at " + pos[0] + "," + pos[1]);
+				// console.log("nan at " + pos[0] + "," + pos[1]);
 				data.classList.add('nan');
 			}
 			else if (data.dataset.crate_name.toUpperCase().indexOf('UNUSED') == 0) {
-				console.log("unused at " + pos[0] + "," + pos[1]);
+				// console.log("unused at " + pos[0] + "," + pos[1]);
 				data.classList.add('unused');
 			}
 			else {
@@ -144,27 +141,8 @@
 				let new_el = document.createElement('option');
 				new_el.innerText = data.dataset.crate_name;
 				document.getElementById("unload_text").appendChild(new_el);
-			}
-			
-			/*
-			switch (line[2].toString()) {
-				case "NAN":
-					alert("nan at " + pos[0] + "," + pos[1]);
-					data.classList.add('nan');
-					break;
-				case "UNUSED":
-					break;
-				default:
-					data.classList.add('inuse');
-					break
-			}
-			*/
-			
-			//console.log(data);
-					
+			}		
 		}
-		
-		
 		
 	}
 	

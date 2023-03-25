@@ -620,7 +620,6 @@ function highlightGrid(node) {
             else {
                 cellElem.classList.add('selected');
             }
-            // console.log(`Highlighted cell: Row ${row}, Column ${col}`);
         }      
         else {
             cellElem.textContent = '';
@@ -634,7 +633,6 @@ for (let i = 0; i < 9; i++) {
     const row = document.createElement('tr');
     for (let j = 0; j < 12; j++) {
         const cell = document.createElement('td');
-        // cell.textContent = `${8 - i},${j + 1}`;
         cell.textContent = ' ';
         if(i == 0 && j != 0) {
             break;
@@ -696,12 +694,10 @@ highlightBtn.addEventListener('click', () => {
         let moveIndex = 0;
         let lastClickTime = 0;
         let completionTime = 0;
-        let sumCompletionTime = 0;
         let stopped = false;
         for(let i = 0; i < moves.length; i++) {
             completionTime += result.moves_cost[i];
         }
-        sumCompletionTime = completionTime;        
         const moveInterval = setInterval(() => {
           if (moveIndex >= moves.length) {
               clearInterval(moveInterval);
@@ -771,12 +767,12 @@ highlightBtn.addEventListener('click', () => {
           });
         }, 2000);
 
-        closepopupBtn.addEventListener('click', () => {
+        closepopupBtn.addEventListener('click', async () => {
             if(stopped == true) {
                 return;
             }
             WriteManifest(result.state, inputManifest.split('\\').pop());
-            log.writeToFile("Manifest " + manifestName + " is closed.")
+            await log.writeToFile("Manifest " + manifestName + " is closed.");
             stopped = true;
             stepsfinishedpopup.close();
             // Reset all cells to their original state
@@ -797,7 +793,6 @@ highlightBtn.addEventListener('click', () => {
             clearInterval(moveInterval);            
             label.innerHTML = " ";
             timelabel.innerHTML = " ";
-            
             window.location=`index.html?user=${authentication.currentLoggedInUser}`;
         });
     });
