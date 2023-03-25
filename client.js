@@ -128,7 +128,7 @@ function WriteManifest(ship, outputFile) {
     let manifest = "";
     for(let i = 1; i <= 8; ++i) {
         for(let j = 1; j <= 12; ++j) {
-            manifest += `[${i.toString().padStart(2, '	0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
+            manifest += `[${i.toString().padStart(2, '0')}, ${j.toString().padStart(2, '0')}], {${ship[i][j].weight.toString().padStart(5, '0')}}, ${ship[i][j].label}` + "\n";
         }
     }
     if(fs.existsSync(output))
