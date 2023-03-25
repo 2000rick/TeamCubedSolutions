@@ -210,7 +210,7 @@ function QUEUE_UNLOAD(nodes, node, OPERATORS, visited) {
       let row = node.ToUnload[k][0];
       let col = node.ToUnload[k][1];
       // Move container to unload to a truck
-      if(node.state[row+1][col].label == "UNUSED") {
+      if(row == 8 || node.state[row+1][col].label == "UNUSED") {
           let expand = Node.clone(node);
           let atomic_cost = PathCost(expand, expand.crane, [row+1, col]); // row+1 due to how crane operates
           atomic_cost += Math.abs(truck_row-(row+1)) + Math.abs(truck_col-col);
